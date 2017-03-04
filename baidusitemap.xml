@@ -3,24 +3,31 @@
 
 
     
-    
-    
-    
-    
-    
-    
   <url>
-    <loc>http://yoursite.com/2017/02/18/hello-world/</loc>
-    <lastmod>2017-02-18T04:46:07.528Z</lastmod>
+    <loc>http://yoursite.com/2017/02/21/2017-2-21/</loc>
+    <lastmod>2017-03-04T07:55:12.716Z</lastmod>
     <data>
         <display>
-        <title>Hello World</title>
-        <pubTime>2017-02-18T04:46:07.527Z</pubTime>
+        <title>我的前端之路</title>
+        <pubTime>2017-02-21T14:38:45.000Z</pubTime>
         
+        <tag>随笔</tag>
+         
+        <tag>职业</tag>
+         
          
            
+             
+              <breadCrumb title="前端" url="http://yoursite.com/categories/%E5%89%8D%E7%AB%AF/"/>
+          
         </display>
     </data>
     </url>
 
+    
+    
+    
+    
+    
+    
 </urlset>
