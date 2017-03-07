@@ -103,7 +103,7 @@ IIFE 还可确保你的代码不会轻易被其它全局命名空间里的代码
 不推荐
 var x = 10,
     y = 1">
-<meta property="og:updated_time" content="2017-03-07T17:07:27.033Z">
+<meta property="og:updated_time" content="2017-03-07T17:23:58.744Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="前端代码规范-JavaScript">
 <meta name="twitter:description" content="##全局命名空间污染与 IIFE
@@ -429,7 +429,8 @@ var x = 10,
 // Declaring variables in the global scope is resulting in global scope pollution. All variables declared like this
 // will be stored in the window object. This is very unclean and needs to be avoided.
 console.log(window.x + &apos; &apos; + window.y);
-</code></pre><p>推荐</p>
+</code></pre><a id="more"></a>
+<p>推荐</p>
 <pre><code>// We declare a IIFE and pass parameters into the function that we will use from the global space
 (function(log, w, undefined){
   &apos;use strict&apos;;
