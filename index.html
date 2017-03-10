@@ -288,6 +288,174 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/03/10/2017-3-12/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="Rufer">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/uploads/avatar.png">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="Rufer's Blog">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="Rufer's Blog" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                
+                <a class="post-title-link" href="/2017/03/10/2017-3-12/" itemprop="url">
+                  移动端设计稿规范
+                </a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-03-10T20:10:09+08:00">
+                2017-03-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/前端/" itemprop="url" rel="index">
+                    <span itemprop="name">前端</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/03/10/2017-3-12/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2017/03/10/2017-3-12/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          <p><img src="http://static.oschina.net/uploads/img/201412/31114844_G1li.jpg" alt=""></p>
+<p>移动app开发中多种设备尺寸适配问题，过去只属于Android阵营的头疼事儿，只是很多设计师选择性地忽视android适配问题，只出一套iOS平台设计稿。随着苹果发布两种新尺寸的大屏iPhone 6，iOS平台尺寸适配问题终于还是来了，移动设计全面进入“杂屏”时代。看看下面三款iPhone尺寸和分辨率数据就知道屏幕有多杂了。</p>
+<p><img src="http://cdn.ui001.com/wp-content/uploads/2014/10/e3e2ae47eb391693752d6d73f60b8eb0_b.jpg" alt=""></p>
+<p>加上Android生态中纷繁复杂的各种奇葩尺寸，现在APP设计开发必须考虑适配大、中、小三种屏幕。所以如何做到交付一套设计稿解决适配大中小三屏的问题？设计和开发之间采用什么协作模式？一个基本思路是： 1、选择一种尺寸作为设计和开发基准； 2、定义一套适配规则，自动适配剩下两种尺寸； 3、特殊适配效果给出设计效果。 手机淘宝的iPhone 6/iPhone 6 Plus适配版本即将提交App store审核。先晒一下我们采用的协作模式，再慢慢说明原委。</p>
+<p><img src="http://cdn.ui001.com/wp-content/uploads/2014/10/62dd57dee9f859151b8ea6a939968a53_b.jpg" alt=""></p>
+<p>第一步，视觉设计阶段，设计师按宽度750px（iPhone 6）做设计稿，除图片外所有设计元素用矢量路径来做。设计定稿后在750px的设计稿上做标注，输出标注图。同时等比放大1.5倍生成宽度1125px的设计稿，在1125px的稿子里切图。 第二步，输出两个交付物给开发工程师：一个是程序用到的@3x切图资源，另一个是宽度750px的设计标注图。 第三步，开发工程师拿到750px标注图和@3x切图资源，完成iPhone 6（375pt）的界面开发。此阶段不能用固定宽度的方式开发界面，得用自动布局（auto layout），方便后续适配到其它尺寸。 第四步，适配调试阶段，基于iPhone 6的界面效果，分别向上向下调试iPhone 6 plus（414pt）和iPhone 5S及以下（320pt）的界面效果。由此完成大中小三屏适配。   为什么选择iPhone 6作为基准尺寸？ 当面对大中小三种屏幕需要适配的时候，很容易想到先做好一种屏幕，再去适配剩下两种屏幕。第一个决定是到底以哪种屏幕作为设计和开发的基准尺寸。我们选择中间尺寸的iPhone 6（750px/375pt）作为基准，基于几个原因： 1、从中间尺寸向上和向下适配的时候界面调整的幅度最小。375pt下的设计效果适配到414pt和320pt偏差不会太大。假设以414pt为基准做出很优雅的设计，到320pt可能元素之间比例就不是那么回事了，比如图片和文字之间视觉比例可能失调。 2、iPhone 6 plus有两种显示模式，标准模式分辨率为1242x2208，放大模式分辨率为1125x2001（即iPhone 6的1.5倍）。可见官方系统里iPhone 6和iPhone 6 plus分辨率之间就存在1.5倍的倍率关系。很多情况下这两种尺寸可以用1.5倍直接等比适配。 3、1242x2208这个奇葩的数值是苹果官方都不愿意公开宣传的一个分辨率，不便于记忆和计算栅格。640x1136虽然是广泛应用的一个分辨率，但是大屏时代依然以小尺寸为设计基准显然不合时宜，设计师会停留在小屏的视角做设计。 所以，iPhone6的750x1334是最适合基准尺寸。   只交付一套设计稿，默认用什么规则来适配？ 前文提到适配策略是先选择iPhone 6作为基准设计尺寸，然后通过一套适配规则自动适配到另外两种尺寸。这套适配规则总结起来就一句话：文字流式，控件弹性，图片等比缩放。</p>
+<p><img src="http://cdn.ui001.com/wp-content/uploads/2014/10/feffdcc6023e2f17e9000d2e70a34d91_b.jpg" alt=""></p>
+<p>控件弹性指的是，navigation、cell、bar等适配过程中垂直方向上高度不变；水平方向宽度变化时，通过调整元素间距或元素右对齐的方式实现自适应。这样屏幕越大，在垂直方向上可以显示更多内容，发挥大屏幕的优势。</p>
+<p><img src="http://cdn.ui001.com/wp-content/uploads/2014/10/2d10708e03046b24477778c03ea2a853_b.jpg" alt=""></p>
+<p><img src="http://cdn.ui001.com/wp-content/uploads/2014/10/006b79515d661fd8e5ed9a9fbaec9dff_b.jpg" alt=""></p>
+<p>按照上述默认适配规则，大中小三种屏幕显示效果均相同。有时候想在大屏幕显示更多内容，需要设计出特殊适配效果。比如App store首页焦点图，从iPhone 6适配到iPhone 6 plus时焦点图尺寸和排版做了特殊处理。底下应用列表也从一排3 个变成一排4 个，真正实现了大屏幕显示更多内容的理念。这些就需要设计师给出相应设计稿。</p>
+<p><img src="http://cdn.ui001.com/wp-content/uploads/2014/10/896c935642bdac91555d3075ee61e3b8_b.jpg" alt=""></p>
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2017/03/10/2017-3-12/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
   <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/03/01/2017-3-10/">
 
   <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -781,6 +949,166 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/02/28/2017-3-7/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="Rufer">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/uploads/avatar.png">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="Rufer's Blog">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="Rufer's Blog" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                
+                <a class="post-title-link" href="/2017/02/28/2017-3-7/" itemprop="url">
+                  前端代码规范-css/sass(scss)
+                </a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-02-28T23:40:02+08:00">
+                2017-02-28
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/前端/" itemprop="url" rel="index">
+                    <span itemprop="name">前端</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/02/28/2017-3-7/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2017/02/28/2017-3-7/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          <h2 id="ID-and-class-naming"><a href="#ID-and-class-naming" class="headerlink" title="ID and class naming"></a>ID and class naming</h2><p>ID和class(类)名总是使用可以反应元素目的和用途的名称，或其他通用名称。代替表象和晦涩难懂的名称。</p>
+<p>应该首选具体和反映元素目的的名称，因为这些是最可以理解的，而且发生变化的可能性最小。</p>
+<p>通用名称只是多个元素的备用名，他们兄弟元素之间是一样的，没有特别意义。<br>区分他们，使他们具有特殊意义，通常需要为“帮手”。</p>
+<p>尽管class(类)名和ID 的语义化对于计算机解析来说没有什么实际的意义，<br>语义化的名称 通常是正确的选择，因为它们所代表的信息含义，不包含表现的限制。</p>
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2017/02/28/2017-3-7/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
   <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/02/28/2017-3-8/">
 
   <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -905,166 +1233,6 @@ console.log(window.x + &apos; &apos; + window.y);
           <!--noindex-->
           <div class="post-button text-center">
             <a class="btn" href="/2017/02/28/2017-3-8/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/02/28/2017-3-7/">
-
-  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <meta itemprop="name" content="Rufer">
-    <meta itemprop="description" content="">
-    <meta itemprop="image" content="/uploads/avatar.png">
-  </span>
-
-  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-    <meta itemprop="name" content="Rufer's Blog">
-    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
-      <img style="display:none;" itemprop="url image" alt="Rufer's Blog" src="">
-    </span>
-  </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-            
-            
-              
-                
-                <a class="post-title-link" href="/2017/02/28/2017-3-7/" itemprop="url">
-                  前端代码规范-css/sass(scss)
-                </a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-02-28T23:40:02+08:00">
-                2017-02-28
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/前端/" itemprop="url" rel="index">
-                    <span itemprop="name">前端</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/02/28/2017-3-7/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count ds-thread-count" data-thread-key="2017/02/28/2017-3-7/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          <h2 id="ID-and-class-naming"><a href="#ID-and-class-naming" class="headerlink" title="ID and class naming"></a>ID and class naming</h2><p>ID和class(类)名总是使用可以反应元素目的和用途的名称，或其他通用名称。代替表象和晦涩难懂的名称。</p>
-<p>应该首选具体和反映元素目的的名称，因为这些是最可以理解的，而且发生变化的可能性最小。</p>
-<p>通用名称只是多个元素的备用名，他们兄弟元素之间是一样的，没有特别意义。<br>区分他们，使他们具有特殊意义，通常需要为“帮手”。</p>
-<p>尽管class(类)名和ID 的语义化对于计算机解析来说没有什么实际的意义，<br>语义化的名称 通常是正确的选择，因为它们所代表的信息含义，不包含表现的限制。</p>
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2017/02/28/2017-3-7/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
@@ -1301,7 +1469,7 @@ console.log(window.x + &apos; &apos; + window.y);
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">6</span>
+                <span class="site-state-item-count">7</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -1319,7 +1487,7 @@ console.log(window.x + &apos; &apos; + window.y);
           
             <div class="site-state-item site-state-tags">
               <a href="/tags">
-                <span class="site-state-item-count">6</span>
+                <span class="site-state-item-count">7</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
