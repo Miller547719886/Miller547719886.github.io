@@ -4,6 +4,26 @@
 
     
   <url>
+    <loc>http://yoursite.com/2017/03/06/2017-3-13/</loc>
+    <lastmod>2017-03-10T12:36:44.000Z</lastmod>
+    <data>
+        <display>
+        <title>fullpage插件使用总结</title>
+        <pubTime>2017-03-06T11:12:54.000Z</pubTime>
+        
+        <tag>jQuery插件</tag>
+         
+         
+           
+             
+              <breadCrumb title="前端" url="http://yoursite.com/categories/%E5%89%8D%E7%AB%AF/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
     <loc>http://yoursite.com/2017/03/01/2017-3-9/</loc>
     <lastmod>2017-03-10T12:35:00.663Z</lastmod>
     <data>
@@ -32,26 +52,6 @@
         <pubTime>2017-03-01T15:40:02.000Z</pubTime>
         
         <tag>代码规范</tag>
-         
-         
-           
-             
-              <breadCrumb title="前端" url="http://yoursite.com/categories/%E5%89%8D%E7%AB%AF/"/>
-          
-        </display>
-    </data>
-    </url>
-
-    
-  <url>
-    <loc>http://yoursite.com/2017/02/28/2017-3-13/</loc>
-    <lastmod>2017-03-10T12:33:55.789Z</lastmod>
-    <data>
-        <display>
-        <title>fullpage插件使用总结</title>
-        <pubTime>2017-02-28T15:40:02.000Z</pubTime>
-        
-        <tag>jQuery插件</tag>
          
          
            
