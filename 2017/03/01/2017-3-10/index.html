@@ -95,7 +95,7 @@
 <meta property="og:site_name" content="Rufer's Blog">
 <meta property="og:description" content="文件/资源命名在 web 项目中，所有的文件名应该都遵循同一命名约定。以可读性而言，减号（-）是用来分隔文件名的不二之选。同时它也是常见的 URL 分隔符（i.e. //example.com/blog/my-blog-entry or //s.example.com/images/big-black-background.jpg），所以理所当然的，减号应该也是用来分隔资源名称的好选择。
 请确保文">
-<meta property="og:updated_time" content="2017-03-08T03:29:37.814Z">
+<meta property="og:updated_time" content="2017-03-10T12:34:24.795Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="前端代码规范-一般规范">
 <meta name="twitter:description" content="文件/资源命名在 web 项目中，所有的文件名应该都遵循同一命名约定。以可读性而言，减号（-）是用来分隔文件名的不二之选。同时它也是常见的 URL 分隔符（i.e. //example.com/blog/my-blog-entry or //s.example.com/images/big-black-background.jpg），所以理所当然的，减号应该也是用来分隔资源名称的好选择。
@@ -402,14 +402,26 @@
 <p>资源的字母名称必须全为小写，这是因为在某些对大小写字母敏感的操作系统中，当文件通过工具压缩混淆后，或者人为修改过后，大小写不同而导致引用文件不同的错误，很难被发现。</p>
 <p>还有一些情况下，需要对文件增加前后缀或特定的扩展名（比如 .min.js, .min.css），抑或一串前缀（比如 3fa89b.main.min.css）。这种情况下，建议使用点分隔符来区分这些在文件名中带有清晰意义的元数据。</p>
 <a id="more"></a>
-<p>不推荐<br>    MyScript.js<br>    myCamelCaseName.css<br>    i_love_underscores.html<br>    1001-scripts.js<br>    my-file-min.css</p>
-<p>推荐<br>    my-script.js<br>    my-camel-case-name.css<br>    i-love-underscores.html<br>    thousand-and-one-scripts.js<br>    my-file.min.css</p>
-<h2 id="协议"><a href="#协议" class="headerlink" title="协议"></a>协议</h2><p>不要指定引入资源所带的具体协议。</p>
+<p>不推荐</p>
+<pre><code>MyScript.js
+myCamelCaseName.css
+i_love_underscores.html
+1001-scripts.js
+my-file-min.css
+</code></pre><p>推荐</p>
+<pre><code>my-script.js
+my-camel-case-name.css
+i-love-underscores.html
+thousand-and-one-scripts.js
+my-file.min.css
+</code></pre><h2 id="协议"><a href="#协议" class="headerlink" title="协议"></a>协议</h2><p>不要指定引入资源所带的具体协议。</p>
 <p>当引入图片或其他媒体文件，还有样式和脚本时，URLs 所指向的具体路径，不要指定协议部分（http:, https:），除非这两者协议都不可用。</p>
 <p>不指定协议使得 URL 从绝对的获取路径转变为相对的，在请求资源协议无法确定时非常好用，而且还能为文件大小节省几个字节。</p>
-<p>不推荐<br>    <script src="http://cdn.com/foundation.min.js"></script></p>
-<p>推荐<br>    <script src="//cdn.com/foundation.min.js"></script></p>
-<p>不推荐<br>    .example {<br>        background: url(<a href="http://static.example.com/images/bg.jpg" target="_blank" rel="external">http://static.example.com/images/bg.jpg</a>);<br>    }</p>
+<p>不推荐</p>
+<pre><code>&lt;script src=&quot;http://cdn.com/foundation.min.js&quot;&gt;&lt;/script&gt;
+</code></pre><p>推荐</p>
+<pre><code>&lt;script src=&quot;//cdn.com/foundation.min.js&quot;&gt;&lt;/script&gt;
+</code></pre><p>不推荐<br>    .example {<br>        background: url(<a href="http://static.example.com/images/bg.jpg" target="_blank" rel="external">http://static.example.com/images/bg.jpg</a>);<br>    }</p>
 <p>推荐<br>    .example {<br>        background: url(//static.example.com/images/bg.jpg);<br>    }</p>
 <h2 id="文本缩进"><a href="#文本缩进" class="headerlink" title="文本缩进"></a>文本缩进</h2><p>一次缩进两个空格。</p>
 <pre><code>&lt;ul&gt;
