@@ -3,6 +3,26 @@
 
 
     
+  <url>
+    <loc>http://yoursite.com/2017/03/01/2017-3-9/</loc>
+    <lastmod>2017-03-11T03:37:20.343Z</lastmod>
+    <data>
+        <display>
+        <title>前端代码规范-html</title>
+        <pubTime>2017-03-01T15:40:02.000Z</pubTime>
+        
+        <tag>html</tag>
+         
+         
+           
+             
+              <breadCrumb title="前端" url="http://yoursite.com/categories/%E5%89%8D%E7%AB%AF/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
     
   <url>
     <loc>http://yoursite.com/2017/03/06/2017-3-13/</loc>
@@ -33,26 +53,6 @@
         <pubTime>2017-02-28T15:40:02.000Z</pubTime>
         
         <tag>JavaScript</tag>
-         
-         
-           
-             
-              <breadCrumb title="前端" url="http://yoursite.com/categories/%E5%89%8D%E7%AB%AF/"/>
-          
-        </display>
-    </data>
-    </url>
-
-    
-  <url>
-    <loc>http://yoursite.com/2017/03/01/2017-3-9/</loc>
-    <lastmod>2017-03-10T12:35:00.663Z</lastmod>
-    <data>
-        <display>
-        <title>前端代码规范-html</title>
-        <pubTime>2017-03-01T15:40:02.000Z</pubTime>
-        
-        <tag>html</tag>
          
          
            

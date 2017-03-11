@@ -87,25 +87,22 @@
 
 
 
-<meta name="description" content="文档类型推荐使用 HTML5 的文档类型申明： &amp;lt;!DOCTYPE html&amp;gt;.
+<meta name="description" content="文档类型推荐使用 HTML5 的文档类型申明： &amp;lt;!DOCTYPE html\&amp;gt;.
 （建议使用 text/html 格式的 HTML。避免使用 XHTML。XHTML 以及它的属性，比如 application/xhtml+xml 在浏览器中的应用支持与优化空间都十分有限）。
-HTML 中最好不要将无内容元素[^1] 的标签闭合，例如：使用  而非 .
-HTML 验证一般情况下，建议使用">
+HTML 中最好不要将无内容元素[^1] 的标签闭合，例如：使用 &amp;lt;br&amp;gt; 而非 &amp;lt;br /">
 <meta property="og:type" content="article">
 <meta property="og:title" content="前端代码规范-html">
 <meta property="og:url" content="http://yoursite.com/2017/03/01/2017-3-9/index.html">
 <meta property="og:site_name" content="Rufer's Blog">
-<meta property="og:description" content="文档类型推荐使用 HTML5 的文档类型申明： &amp;lt;!DOCTYPE html&amp;gt;.
+<meta property="og:description" content="文档类型推荐使用 HTML5 的文档类型申明： &amp;lt;!DOCTYPE html\&amp;gt;.
 （建议使用 text/html 格式的 HTML。避免使用 XHTML。XHTML 以及它的属性，比如 application/xhtml+xml 在浏览器中的应用支持与优化空间都十分有限）。
-HTML 中最好不要将无内容元素[^1] 的标签闭合，例如：使用  而非 .
-HTML 验证一般情况下，建议使用">
-<meta property="og:updated_time" content="2017-03-10T12:35:00.663Z">
+HTML 中最好不要将无内容元素[^1] 的标签闭合，例如：使用 &amp;lt;br&amp;gt; 而非 &amp;lt;br /">
+<meta property="og:updated_time" content="2017-03-11T03:37:20.343Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="前端代码规范-html">
-<meta name="twitter:description" content="文档类型推荐使用 HTML5 的文档类型申明： &amp;lt;!DOCTYPE html&amp;gt;.
+<meta name="twitter:description" content="文档类型推荐使用 HTML5 的文档类型申明： &amp;lt;!DOCTYPE html\&amp;gt;.
 （建议使用 text/html 格式的 HTML。避免使用 XHTML。XHTML 以及它的属性，比如 application/xhtml+xml 在浏览器中的应用支持与优化空间都十分有限）。
-HTML 中最好不要将无内容元素[^1] 的标签闭合，例如：使用  而非 .
-HTML 验证一般情况下，建议使用">
+HTML 中最好不要将无内容元素[^1] 的标签闭合，例如：使用 &amp;lt;br&amp;gt; 而非 &amp;lt;br /">
 
 
 
@@ -403,9 +400,9 @@ HTML 验证一般情况下，建议使用">
       
 
       
-        <h2 id="文档类型"><a href="#文档类型" class="headerlink" title="文档类型"></a>文档类型</h2><p>推荐使用 HTML5 的文档类型申明： &lt;!DOCTYPE html&gt;.</p>
+        <h2 id="文档类型"><a href="#文档类型" class="headerlink" title="文档类型"></a>文档类型</h2><p>推荐使用 HTML5 的文档类型申明： &lt;!DOCTYPE html\&gt;.</p>
 <p>（建议使用 text/html 格式的 HTML。避免使用 XHTML。XHTML 以及它的属性，比如 application/xhtml+xml 在浏览器中的应用支持与优化空间都十分有限）。</p>
-<p>HTML 中最好不要将无内容元素[^1] 的标签闭合，例如：使用 <br> 而非 <br>.</p>
+<p>HTML 中最好不要将无内容元素[^1] 的标签闭合，例如：使用 &lt;br&gt; 而非 &lt;br /&gt;.</p>
 <h2 id="HTML-验证"><a href="#HTML-验证" class="headerlink" title="HTML 验证"></a>HTML 验证</h2><p>一般情况下，建议使用能通过标准规范验证的 HTML 代码，除非在性能优化和控制文件大小上不得不做出让步。</p>
 <p>使用诸如 W3C HTML validator 这样的工具来进行检测。</p>
 <p>规范化的 HTML 是显现技术要求与局限的显著质量基线，它促进了 HTML 被更好地运用。</p>
@@ -420,8 +417,8 @@ HTML 验证一般情况下，建议使用">
 &lt;article&gt;This is only a test.&lt;/article&gt;
 </code></pre><h2 id="省略可选标签"><a href="#省略可选标签" class="headerlink" title="省略可选标签"></a>省略可选标签</h2><p>HTML5 规范中规定了 HTML 标签是可以省略的。但从可读性来说，在开发的源文件中最好不要这样做，因为省略标签可能会导致一些问题。</p>
 <p>省略一些可选的标签确实使得页面大小减少，这很有用，尤其是对于一些大型网站来说。为了达到这一目的，我们可以在开发后期对页面进行压缩处理，在这个环节中这些可选的标签完全就可以省略掉了。</p>
-<h2 id="脚本加载"><a href="#脚本加载" class="headerlink" title="脚本加载"></a>脚本加载</h2><p>出于性能考虑，脚本异步加载很关键。一段脚本放置在 <head> 内，比如 <script src="main.js"></script>，其加载会一直阻塞 DOM 解析，直至它完全地加载和执行完毕。这会造成页面显示的延迟。特别是一些重量级的脚本，对用户体验来说那真是一个巨大的影响。</head></p>
-<p>异步加载脚本可缓解这种性能影响。如果只需兼容 IE10+，可将 HTML5 的 async 属性加至脚本中，它可防止阻塞 DOM 的解析，甚至你可以将脚本引用写在 <head> 里也没有影响。</head></p>
+<h2 id="脚本加载"><a href="#脚本加载" class="headerlink" title="脚本加载"></a>脚本加载</h2><p>出于性能考虑，脚本异步加载很关键。一段脚本放置在 &lt;head&gt; 内，比如 &lt;script src=”main.js”&gt;&lt;/script&gt;，其加载会一直阻塞 DOM 解析，直至它完全地加载和执行完毕。这会造成页面显示的延迟。特别是一些重量级的脚本，对用户体验来说那真是一个巨大的影响。</p>
+<p>异步加载脚本可缓解这种性能影响。如果只需兼容 IE10+，可将 HTML5 的 async 属性加至脚本中，它可防止阻塞 DOM 的解析，甚至你可以将脚本引用写在 &lt;head&gt; 里也没有影响。</p>
 <p>如需兼容老旧的浏览器，实践表明可使用用来动态注入脚本的脚本加载器。你可以考虑 yepnope 或 labjs。注入脚本的一个问题是：一直要等到 CSS 对象文档已就绪，它们才开始加载（短暂地在 CSS 加载完毕之后），这就对需要及时触发的 JS 造成了一定的延迟，这多多少少也影响了用户体验吧。</p>
 <p>终上所述，兼容老旧浏览器(IE9-)时，应该遵循以下最佳实践。</p>
 <p>脚本引用写在 body 结束标签之前，并带上 async 属性。这虽然在老旧浏览器中不会异步加载脚本，但它只阻塞了 body 结束标签之前的 DOM 解析，这就大大降低了其阻塞影响。而在现代浏览器中，脚本将在 DOM 解析器发现 body 尾部的 script 标签才进行加载，此时加载属于异步加载，不会阻塞 CSSOM（但其执行仍发生在 CSSOM 之后）。</p>
@@ -783,8 +780,8 @@ HTML 验证一般情况下，建议使用">
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2017/03/01/2017-3-11/" rel="prev" title="css命名法-BEM命名法详解">
-                css命名法-BEM命名法详解 <i class="fa fa-chevron-right"></i>
+              <a href="/2017/03/01/2017-3-10/" rel="prev" title="前端代码规范-一般规范">
+                前端代码规范-一般规范 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
