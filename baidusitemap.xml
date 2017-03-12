@@ -4,6 +4,26 @@
 
     
   <url>
+    <loc>http://yoursite.com/2017/03/13/2017-3-14/</loc>
+    <lastmod>2017-03-12T19:42:33.010Z</lastmod>
+    <data>
+        <display>
+        <title>从一道面试题理解JavaScript中的this</title>
+        <pubTime>2017-03-12T17:03:54.000Z</pubTime>
+        
+        <tag>JavaScript</tag>
+         
+         
+           
+             
+              <breadCrumb title="前端" url="http://yoursite.com/categories/%E5%89%8D%E7%AB%AF/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
     <loc>http://yoursite.com/2017/03/01/2017-3-9/</loc>
     <lastmod>2017-03-11T03:40:28.768Z</lastmod>
     <data>

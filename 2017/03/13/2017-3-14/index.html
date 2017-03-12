@@ -71,7 +71,7 @@
 <link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="随笔,职业," />
+  <meta name="keywords" content="JavaScript," />
 
 
 
@@ -87,18 +87,52 @@
 
 
 
-<meta name="description" content="起源大家好，我是一个切图仔，现在在一家普通的公司做着普通的切图工作。现在是晚上10点钟，我正喝着香飘飘奶茶，在网易云音乐上听着武林外传电视剧。我的思绪随着故事里的对话飘到了很久以前：那时候我还在上初中，因为学校那边租的房子没有电视，为了我在租房那边有东西可以消遣，于是我在暑假的时候把mp3放在电视的播音口上，当武林外传开播，我就赶紧按下开始录音，当广告开始，我又马上从沙发上跳起来把录音关掉。。。结">
+<meta name="description" content="##问题闲话少说，先上题目：
+var x = 20;
+var a = {
+    x: 15,
+    fn: function() {
+        var x = 30;
+        return function() {
+            return this.x;
+        };
+    }
+};
+console.log(a.fn());
+console.log((a.">
 <meta property="og:type" content="article">
-<meta property="og:title" content="我的前端之路">
-<meta property="og:url" content="http://yoursite.com/2017/02/21/2017-2-21/index.html">
+<meta property="og:title" content="从一道面试题理解JavaScript中的this">
+<meta property="og:url" content="http://yoursite.com/2017/03/13/2017-3-14/index.html">
 <meta property="og:site_name" content="Rufer's Blog">
-<meta property="og:description" content="起源大家好，我是一个切图仔，现在在一家普通的公司做着普通的切图工作。现在是晚上10点钟，我正喝着香飘飘奶茶，在网易云音乐上听着武林外传电视剧。我的思绪随着故事里的对话飘到了很久以前：那时候我还在上初中，因为学校那边租的房子没有电视，为了我在租房那边有东西可以消遣，于是我在暑假的时候把mp3放在电视的播音口上，当武林外传开播，我就赶紧按下开始录音，当广告开始，我又马上从沙发上跳起来把录音关掉。。。结">
-<meta property="og:image" content="http://imgsrc.baidu.com/forum/w%3D580/sign=0130ce837ad98d1076d40c39113eb807/19f09f3df8dcd100954ca05e748b4710b8122fb7.jpg">
-<meta property="og:updated_time" content="2017-03-08T04:19:16.776Z">
+<meta property="og:description" content="##问题闲话少说，先上题目：
+var x = 20;
+var a = {
+    x: 15,
+    fn: function() {
+        var x = 30;
+        return function() {
+            return this.x;
+        };
+    }
+};
+console.log(a.fn());
+console.log((a.">
+<meta property="og:updated_time" content="2017-03-12T19:42:33.010Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="我的前端之路">
-<meta name="twitter:description" content="起源大家好，我是一个切图仔，现在在一家普通的公司做着普通的切图工作。现在是晚上10点钟，我正喝着香飘飘奶茶，在网易云音乐上听着武林外传电视剧。我的思绪随着故事里的对话飘到了很久以前：那时候我还在上初中，因为学校那边租的房子没有电视，为了我在租房那边有东西可以消遣，于是我在暑假的时候把mp3放在电视的播音口上，当武林外传开播，我就赶紧按下开始录音，当广告开始，我又马上从沙发上跳起来把录音关掉。。。结">
-<meta name="twitter:image" content="http://imgsrc.baidu.com/forum/w%3D580/sign=0130ce837ad98d1076d40c39113eb807/19f09f3df8dcd100954ca05e748b4710b8122fb7.jpg">
+<meta name="twitter:title" content="从一道面试题理解JavaScript中的this">
+<meta name="twitter:description" content="##问题闲话少说，先上题目：
+var x = 20;
+var a = {
+    x: 15,
+    fn: function() {
+        var x = 30;
+        return function() {
+            return this.x;
+        };
+    }
+};
+console.log(a.fn());
+console.log((a.">
 
 
 
@@ -126,13 +160,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2017/02/21/2017-2-21/"/>
+  <link rel="canonical" href="http://yoursite.com/2017/03/13/2017-3-14/"/>
 
 
 
 
 
-  <title> 我的前端之路 | Rufer's Blog </title>
+  <title> 从一道面试题理解JavaScript中的this | Rufer's Blog </title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -279,7 +313,7 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/02/21/2017-2-21/">
+  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/03/13/2017-3-14/">
 
   <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
     <meta itemprop="name" content="Rufer">
@@ -303,7 +337,7 @@
             
             
               
-                我的前端之路
+                从一道面试题理解JavaScript中的this
               
             
           </h1>
@@ -318,8 +352,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-02-21T22:38:45+08:00">
-                2017-02-21
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-03-13T01:03:54+08:00">
+                2017-03-13
               </time>
             
 
@@ -341,8 +375,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/人生/" itemprop="url" rel="index">
-                    <span itemprop="name">人生</span>
+                  <a href="/categories/前端/" itemprop="url" rel="index">
+                    <span itemprop="name">前端</span>
                   </a>
                 </span>
 
@@ -359,8 +393,8 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2017/02/21/2017-2-21/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count ds-thread-count" data-thread-key="2017/02/21/2017-2-21/" itemprop="commentCount"></span>
+                <a href="/2017/03/13/2017-3-14/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2017/03/13/2017-3-14/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -386,24 +420,102 @@
       
 
       
-        <h2 id="起源"><a href="#起源" class="headerlink" title="起源"></a>起源</h2><p>大家好，我是一个切图仔，现在在一家普通的公司做着普通的切图工作。现在是晚上10点钟，我正喝着香飘飘奶茶，在网易云音乐上听着武林外传电视剧。我的思绪随着故事里的对话飘到了很久以前：那时候我还在上初中，因为学校那边租的房子没有电视，为了我在租房那边有东西可以消遣，于是我在暑假的时候把mp3放在电视的播音口上，当武林外传开播，我就赶紧按下开始录音，当广告开始，我又马上从沙发上跳起来把录音关掉。。。结果到”验货”的时候发现好多录音都是杂音！气死我也。。。好像跑题了，本文的主题是我的职业之路，言归正传。。。</p>
-<p>提问：我是如何走上前端这条不归路的？<br>回答：故事要追溯到2015年。。。</p>
-<a id="more"></a>
-<p>那时候我读大三，作为一名标准的死宅看动漫打游戏，偶尔弹弹琴文艺一下。时值大三结束之际，有先见之明的同志们已经筹备着即将到来的秋招。那时候的我用一个字形容就是”迷”：明明没有任何一家企业给我offer却有一种谜一样的淡定。。。</p>
-<p><img src="http://imgsrc.baidu.com/forum/w%3D580/sign=0130ce837ad98d1076d40c39113eb807/19f09f3df8dcd100954ca05e748b4710b8122fb7.jpg" alt="淡定狗狗"></p>
-<p>说心里不慌是不可能的，我一直觉得大学最重要的是确定自己要做什么，能为之多做一点准备更好。于是我在大三升大四的暑假选择留校在实验室。刚好那时候上的《web技术基础》这门课要交期末作业了，也就是用书本中尽量多的内容写一张网页，内容不限。于是我就照着书抄标签：能用的标签全部用上，最后一张应该被称为”html标签识别教学案例”的页面就这么诞生了。写完第一张页面，我心中不由得升起一股成就感(我也不知这成就感从何而来，毫无技术性可言的一张页面花了我一下午的时间)，更重要的是，在那段迷茫的时期我感觉有事情可做了：写页面！于是我认识了”前端”这个词，认识了”极客学院”、”慕课网”这些在线学习平台。我还心血来潮，买了一本当时不适合我的书，这本书我到现在还在看：《JavaScript高级程序设计》(第三版)<br>。拿到书的那天我煞有介事的带到学校的实验室看了一下午带一个晚上。可以很明白的说，那天我就看懂一句话：</p>
-<blockquote>
-<p>本书不适合没有计算机基础知识的初学者，也不适合只想为网站添加简单交互功能的读者。 <a href="原文出自《JavaScript高级程序设计》(第三版)。">^1</a> </p>
-</blockquote>
-<p>就算是这样，但是我拿着书看就有种谜一样的充实感。<br>这么跟着慕课网的老师们边学边做了一个暑假以后，大四上学期我开始找实习。终于在15年的10月份找到一家初创业公司内的实习工作，岗位是web前端实习生。</p>
-<h2 id="工作与收获"><a href="#工作与收获" class="headerlink" title="工作与收获"></a>工作与收获</h2><p>由于公司主要做海外的业务，市场重心放在第三世界国家，所以我的很多工作就是”翻译”：把网站上的文本内容换成其他国家语言，趁此机会了解这样的功能是怎么实现的。现在看来就是一个很简单的工作:将页面上的文本翻译成各种国家的语言用json格式保存起来，以页面上的切换选项作为入口选择不同的语言跳转到当前页面并加上”?lan=xx”的后缀，在页面加载时分析url的fragment部分并根据解析出的值来加载不同的语言。当时我可是研究了很久才弄明白。在公司里，如果没有事情做，我就找技术论坛和社区看文章。那时候也为隔壁的移动端部门做了几张app宣传页面，借此机会对移动端手势事件做了一些了解，知道了移动端点击事件延迟300ms的原理，知道了rem单位可以用来做响应式布局。回想那段实习的日子可真是苦啊，尤其是一月底那段时间，早上6点半的时候就起来，天刚刚亮的时候我就已经到了轻轨站。一路上是又上天（轻轨）又下海（过江隧道），还要走40多分钟的路，最后还只能踩着点到公司。现在想一想，当时我是怎么熬过来的，估计只有当时的我才知道吧。</p>
-<p>毕业以后，我又找了一份注重于页面的工作（也就是现在的工作）。工资不高，但是有一个厉害的老大。抱着向前辈多学习的想法，我开始了我的页面工程师的生涯。</p>
-<p>工作的内容就是页面重构：按照视觉稿的要求写新的页面或者修改旧的页面。在这里我接触了新的工具：gulp和git，以及新的语言：jade+sass；知道了ui组件的模块化是怎么回事：将页面按照页头、页脚、侧边栏等板块拆分出一个个组件，分别对组件进行管理与维护。在读懂了公司的gulpfile.js之后，我在自己的电脑上也配置了一套页面重构的环境，学会了npm包管理工具的配置方法和gulp自动化构建工具的配置技巧。</p>
-<p>有的时候我也会写用户交互用的js，曾经有一位同事跟我说了代码编写要符合规范，因为我的代码让人一看就不想看下去，很乱。于是我开始注意css与js编写的规范，在查阅了大量的资料后，我渐渐养成了干净、整洁的编码习惯。</p>
-<p>由于公司内的功能交互是依赖于jQuery库的，我有时会和同事一起解决交互功能的问题。这个时候我又发现了代码的质量影响到页面的性能。由此我明白了事件委托原理，函数防抖与节流原理，事件队列原理。在应用这些方法的时候，我感觉自己的代码水平又提高了一层。</p>
-<p>在这家公司里我养成了记笔记的习惯：发现有好的文章，我就记下链接保存在我的笔记中。这些笔记到现在我都认为有保存下来的价值。</p>
-<p>在这家公司我还使用es6+react过了一把瘾：公司里要求做一个文字冒险游戏主题编辑器，老大将架子搭好以后就丢给了我，由我解决后续的需求。那一个月里面我又重新开始学es6规范的js，为此我买了第三本书：阮一峰老师的《ES6标准入门》(第二版)。由于对react框架不熟，对新的语法也不熟，我写每一段代码都很艰难。至今都没有把握说懂了react框架或是es6语法。</p>
-<h2 id="2017"><a href="#2017" class="headerlink" title="2017"></a>2017</h2><p>今年是我正式踏入社会的第二年。我坚信保持学习，提升个人价值是我近两年的第一目标。所以我对自己今年的期望，就是比去年获取有效知识的效率更高，解决bug的速度更快，做一个高效率的开发者。</p>
+        <p>##问题<br>闲话少说，先上题目：</p>
+<pre><code>var x = 20;
+var a = {
+    x: 15,
+    fn: function() {
+        var x = 30;
+        return function() {
+            return this.x;
+        };
+    }
+};
+console.log(a.fn());
+console.log((a.fn())());
+console.log(a.fn()());
+console.log(a.fn()() === (a.fn())());
+console.log(a.fn().call(this));
+console.log(a.fn().call(a));
+</code></pre><p>各位心里是否已经有了答案？<br>现在公布正确答案：</p>
+<pre><code>function() {
+    return this.x;
+};
+20
+20
+true
+20
+15
+</code></pre><p>现在来从头开始分析：<br>首先在window对象下挂载了一个x对象值为20;<br>接下来在window对象下挂载了一个a对象，内部挂载一个x对象值为15，一个fn对象值为一个函数表达式，函数返回结果为当前调用该函数的对象下挂载的x的值。</p>
+<p>##Q1</p>
+<p>第一个a.fn():<br>我们知道var a = function() {}这种形式的赋值，打印a输出的就是该函数表达式，打印a()得到的就是函数执行完后的返回值，也就是return的值，如果没有return，就默认返回undefined(参考JavaScript语言精粹(修订版)第31页-返回(return)一节的倒数第二段内容)。<br>所以这里如果是打印a.fn，那么结果将是</p>
+<pre><code>function() {
+    var x = 30;
+    return function() {
+        return this.x;
+    };
+}    
+</code></pre><p>而打印a.fn(),也就是打印这个方法return的结果，该方法return的还是一个函数，那就打印出来呗：</p>
+<pre><code>function() {
+    return this.x;
+};
+</code></pre><p>##Q2</p>
+<p>第二个：(a.fn())()</p>
+<p>在看第二个问题之前，建议先看一下阮一峰老师的<a href="http://www.ruanyifeng.com/blog/2010/04/using_this_keyword_in_javascript.html" target="_blank" rel="external">Javascript的this用法</a>。</p>
+<p>第二个其实就是执行第一问所打印出的函数啦，将a.fn()包起来的括号可有可无，只是有的话更能突出最后一个括号的”执行”的含义。</p>
+<p>看了阮一峰老师关于this的文章以后，我们知道了this的4种使用情况：</p>
+<ol>
+<li>纯粹的函数调用</li>
+<li>作为对象方法的调用</li>
+<li>作为构造函数调用</li>
+<li>apply/call调用</li>
+</ol>
+<p>那么一步步来：a.fn是a对象下面的方法；<br>a.fn()是a对象下面方法执行后返回的结果，结果还是一个函数；<br>(a.fn())()是a对象下面方法执行后返回的结果(还是一个函数，还可以执行并返回结果)执行并返回的结果。<br>也就是说到最后其实上面的(a.fn())()说白了就是执行这个函数并返回结果：</p>
+<pre><code>function() {
+    return this.x;
+};
+</code></pre><p>返回的结果是this.x，我们根据this的4中使用情况一一排除分析：<br>这里有apply或call方法吗？没有，第四种情况排除；<br>这是一个构造函数吗？整段代码没有new关键词，第三种情况排除；<br>这是一个对象方法的调用吗？看到a.fn()，我还真以为这就是在a对象下面的调用了。的确，我们调用了a对象下面的fn方法，得到了一个返回值。可是我们有在a对象下面的fn这一层作用域中使用过this吗？如果在这一层中我们使用某个变量保存了this的值并在后续的返回值中使用，那代码运行的结果还真可能不一样。比如我们改一改代码：</p>
+<pre><code>var x = 20;
+var a = {
+    x: 15,
+    fn: function() {
+        var xx = this.x;
+        return function() {
+            return xx;
+        };
+    }
+};
+</code></pre><p>这下结果将变成</p>
+<pre><code>function() {
+    return this.x;
+};
+15
+15
+true
+15
+15
+</code></pre><p>因为我们在fn所指向的function中保存了this.x，这里的this就指向a对象。为什么？因为fn是a对象下的方法。那么我们这里的(a.fn())()是不是a对象下的方法呢？人家就只是一个返回值，只是我们借a对象下的fn方法之手得到的一个返回值而已！问题到这里，就简化成了：</p>
+<p>执行一个</p>
+<pre><code>function() {
+    return this.x;
+};
+</code></pre><p>这样的函数中，this指向谁？</p>
+<p>相信大家都知道答案了吧。第二问答案：window对象下的x，也就是20；</p>
+<p>##Q3</p>
+<p>第三问a.fn()()同第二问，答案20；</p>
+<p>##Q4</p>
+<p>第四问a.fn()() === (a.fn())()就是在问：第三问的答案是否全等于第二问的答案？</p>
+<pre><code>20 === 20 
+</code></pre><p>这个判断的返回值为true不用多说；</p>
+<p>##Q5</p>
+<p>第五问a.fn().call(this)：</p>
+<p>不管前面是什么函数，我们在全局环境下调用xxxx().call(this)，这个this都指代window。</p>
+<p>即是说我们传window对象为a.fn()函数的this的指代对象。</p>
+<p>令我不解的是，a.fn()到最后也只是返回一个函数声明而已。即使绑定window为this指代的对象也无法做什么，可是结果竟然是a.fn()()的返回值，这一点我很不解。望各位解惑。</p>
+<p>在理解以上概念的基础上，这个返回结果就是window.x = 20就很容易理解了。</p>
+<p>##Q6</p>
+<p>第五问a.fn().call(a)：</p>
+<p>同第五问，我们将a.fn()内部的this对象绑定为a，那么this.x就是a.x就是15。</p>
 
       
     </div>
@@ -427,9 +539,7 @@
       
         <div class="post-tags">
           
-            <a href="/tags/随笔/" rel="tag"># 随笔</a>
-          
-            <a href="/tags/职业/" rel="tag"># 职业</a>
+            <a href="/tags/JavaScript/" rel="tag"># JavaScript</a>
           
         </div>
       
@@ -442,15 +552,15 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
+              <a href="/2017/03/06/2017-3-13/" rel="next" title="fullpage插件使用总结">
+                <i class="fa fa-chevron-left"></i> fullpage插件使用总结
+              </a>
+            
           </div>
 
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2017/02/28/2017-3-8/" rel="prev" title="前端代码规范-JavaScript">
-                前端代码规范-JavaScript <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -476,8 +586,8 @@
           
   <div class="comments" id="comments">
     
-      <div class="ds-thread" data-thread-key="2017/02/21/2017-2-21/"
-           data-title="我的前端之路" data-url="http://yoursite.com/2017/02/21/2017-2-21/">
+      <div class="ds-thread" data-thread-key="2017/03/13/2017-3-14/"
+           data-title="从一道面试题理解JavaScript中的this" data-url="http://yoursite.com/2017/03/13/2017-3-14/">
       </div>
     
   </div>
@@ -501,17 +611,8 @@
       
 
       
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
-            文章目录
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview">
-            站点概览
-          </li>
-        </ul>
-      
 
-      <section class="site-overview sidebar-panel">
+      <section class="site-overview sidebar-panel sidebar-panel-active">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
           <img class="site-author-image" itemprop="image"
                src="/uploads/avatar.png"
@@ -591,22 +692,6 @@
 
       </section>
 
-      
-      <!--noindex-->
-        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
-          <div class="post-toc">
-
-            
-              
-            
-
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#起源"><span class="nav-number">1.</span> <span class="nav-text">起源</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#工作与收获"><span class="nav-number">2.</span> <span class="nav-text">工作与收获</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2017"><span class="nav-number">3.</span> <span class="nav-text">2017</span></a></li></ol></div>
-            
-
-          </div>
-        </section>
-      <!--/noindex-->
       
 
     </div>
