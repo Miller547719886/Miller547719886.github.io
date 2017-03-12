@@ -479,7 +479,7 @@ true
 <p>即是说我们传window对象为a.fn()函数的this的指代对象。</p>
 <p>令我不解的是，a.fn()到最后也只是返回一个函数声明而已。即使绑定window为this指代的对象也无法做什么，可是结果竟然是a.fn()()的返回值，这一点我很不解。望各位解惑。</p>
 <p>在理解以上概念的基础上，这个返回结果就是window.x = 20就很容易理解了。</p>
-<h2 id="Q6"><a href="#Q6" class="headerlink" title="Q6"></a>Q6</h2><p>第五问a.fn().call(a)：</p>
+<h2 id="Q6"><a href="#Q6" class="headerlink" title="Q6"></a>Q6</h2><p>第六问a.fn().call(a)：</p>
 <p>同第五问，我们将a.fn()内部的this对象绑定为a，那么this.x就是a.x就是15。</p>
 
           
