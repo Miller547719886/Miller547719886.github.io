@@ -390,7 +390,7 @@
       
         
           
-            <p>##问题<br>闲话少说，先上题目：</p>
+            <h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>闲话少说，先上题目：</p>
 <pre><code>var x = 20;
 var a = {
     x: 15,
@@ -417,8 +417,7 @@ true
 20
 15
 </code></pre><p>现在来从头开始分析：<br>首先在window对象下挂载了一个x对象值为20;<br>接下来在window对象下挂载了一个a对象，内部挂载一个x对象值为15，一个fn对象值为一个函数表达式，函数返回结果为当前调用该函数的对象下挂载的x的值。</p>
-<p>##Q1</p>
-<p>第一个a.fn():<br>我们知道var a = function() {}这种形式的赋值，打印a输出的就是该函数表达式，打印a()得到的就是函数执行完后的返回值，也就是return的值，如果没有return，就默认返回undefined(参考JavaScript语言精粹(修订版)第31页-返回(return)一节的倒数第二段内容)。<br>所以这里如果是打印a.fn，那么结果将是</p>
+<h2 id="Q1"><a href="#Q1" class="headerlink" title="Q1"></a>Q1</h2><p>第一个a.fn():<br>我们知道var a = function() {}这种形式的赋值，打印a输出的就是该函数表达式，打印a()得到的就是函数执行完后的返回值，也就是return的值，如果没有return，就默认返回undefined(参考JavaScript语言精粹(修订版)第31页-返回(return)一节的倒数第二段内容)。<br>所以这里如果是打印a.fn，那么结果将是</p>
 <pre><code>function() {
     var x = 30;
     return function() {
@@ -429,8 +428,7 @@ true
 <pre><code>function() {
     return this.x;
 };
-</code></pre><p>##Q2</p>
-<p>第二个：(a.fn())()</p>
+</code></pre><h2 id="Q2"><a href="#Q2" class="headerlink" title="Q2"></a>Q2</h2><p>第二个：(a.fn())()</p>
 <p>在看第二个问题之前，建议先看一下阮一峰老师的<a href="http://www.ruanyifeng.com/blog/2010/04/using_this_keyword_in_javascript.html" target="_blank" rel="external">Javascript的this用法</a>。</p>
 <p>第二个其实就是执行第一问所打印出的函数啦，将a.fn()包起来的括号可有可无，只是有的话更能突出最后一个括号的”执行”的含义。</p>
 <p>看了阮一峰老师关于this的文章以后，我们知道了this的4种使用情况：</p>
@@ -471,20 +469,17 @@ true
 };
 </code></pre><p>这样的函数中，this指向谁？</p>
 <p>相信大家都知道答案了吧。第二问答案：window对象下的x，也就是20；</p>
-<p>##Q3</p>
-<p>第三问a.fn()()同第二问，答案20；</p>
+<h2 id="Q3"><a href="#Q3" class="headerlink" title="Q3"></a>Q3</h2><p>第三问a.fn()()同第二问，答案20；</p>
 <p>##Q4</p>
 <p>第四问a.fn()() === (a.fn())()就是在问：第三问的答案是否全等于第二问的答案？</p>
 <pre><code>20 === 20 
 </code></pre><p>这个判断的返回值为true不用多说；</p>
-<p>##Q5</p>
-<p>第五问a.fn().call(this)：</p>
+<h2 id="Q5"><a href="#Q5" class="headerlink" title="Q5"></a>Q5</h2><p>第五问a.fn().call(this)：</p>
 <p>不管前面是什么函数，我们在全局环境下调用xxxx().call(this)，这个this都指代window。</p>
 <p>即是说我们传window对象为a.fn()函数的this的指代对象。</p>
 <p>令我不解的是，a.fn()到最后也只是返回一个函数声明而已。即使绑定window为this指代的对象也无法做什么，可是结果竟然是a.fn()()的返回值，这一点我很不解。望各位解惑。</p>
 <p>在理解以上概念的基础上，这个返回结果就是window.x = 20就很容易理解了。</p>
-<p>##Q6</p>
-<p>第五问a.fn().call(a)：</p>
+<h2 id="Q6"><a href="#Q6" class="headerlink" title="Q6"></a>Q6</h2><p>第五问a.fn().call(a)：</p>
 <p>同第五问，我们将a.fn()内部的this对象绑定为a，那么this.x就是a.x就是15。</p>
 
           
