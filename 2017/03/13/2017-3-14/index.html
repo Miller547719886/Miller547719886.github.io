@@ -117,7 +117,7 @@ var a = {
 };
 console.log(a.fn());
 console.log((a.fn">
-<meta property="og:updated_time" content="2017-03-12T19:47:10.633Z">
+<meta property="og:updated_time" content="2017-03-13T05:09:05.575Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="从一道面试题理解JavaScript中的this">
 <meta name="twitter:description" content="问题闲话少说，先上题目：
@@ -508,7 +508,19 @@ true
 <h2 id="Q5"><a href="#Q5" class="headerlink" title="Q5"></a>Q5</h2><p>第五问a.fn().call(this)：</p>
 <p>不管前面是什么函数，我们在全局环境下调用xxxx().call(this)，这个this都指代window。</p>
 <p>即是说我们传window对象为a.fn()函数的this的指代对象。</p>
-<p>令我不解的是，a.fn()到最后也只是返回一个函数声明而已。即使绑定window为this指代的对象也无法做什么，可是结果竟然是a.fn()()的返回值，这一点我很不解。望各位解惑。</p>
+<p>我们再来看看call()方法的定义：</p>
+<blockquote>
+<p>call方法可以用来代替另一个对象调用一个方法。call方法可以将一个函数的对象上下文从初始上下文改变为call()中指定的新对象。</p>
+</blockquote>
+<p>我们看看call方法的用法：</p>
+<pre><code>var func=new function(){this.a=&quot;func&quot;}   
+var myfunc=function(x){   
+    var a=&quot;myfunc&quot;;   
+    alert(this.a);   
+    alert(x);   
+}   
+myfunc.call(func,&quot;var&quot;);
+</code></pre><p>可见myfunc为函数名，后跟call方法后改变了this的指向<strong>并调用了该方法</strong>。</p>
 <p>在理解以上概念的基础上，这个返回结果就是window.x = 20就很容易理解了。</p>
 <h2 id="Q6"><a href="#Q6" class="headerlink" title="Q6"></a>Q6</h2><p>第六问a.fn().call(a)：</p>
 <p>同第五问，我们将a.fn()内部的this对象绑定为a，那么this.x就是a.x就是15。</p>
