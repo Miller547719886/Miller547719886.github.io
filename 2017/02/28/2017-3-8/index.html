@@ -101,7 +101,7 @@ IIFE 还可确保你的代码不会轻易被其它全局命名空间里的代码
 不推荐
 var x = 10,
     y = 100;">
-<meta property="og:updated_time" content="2017-03-10T12:35:12.570Z">
+<meta property="og:updated_time" content="2017-03-15T14:56:33.826Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="前端代码规范-JavaScript">
 <meta name="twitter:description" content="全局命名空间污染与 IIFE总是将代码包裹成一个 IIFE(Immediately-Invoked Function Expression)，用以创建独立隔绝的定义域。这一举措可防止全局命名空间被污染。
@@ -592,14 +592,34 @@ y = 100;
 
 }(window.console.log));
 </code></pre><p>推荐</p>
-<p>(function(log){<br>  ‘use strict’;</p>
-<p>  var a = 10,<br>      b = 10,<br>      i,<br>      c,<br>      d,<br>      x;</p>
-<p>  function f() {</p>
-<p>  }</p>
-<p>  for(i = 0; i &lt; 10; i++) {<br>    c = a <em> b </em> i;<br>  }</p>
-<p>  d = 100;<br>  x = function() {<br>    return d * d;<br>  };<br>  log(x());</p>
-<p>}(window.console.log));</p>
-<p>把赋值尽量写在变量申明中。</p>
+<pre><code>(function(log){
+  &apos;use strict&apos;;
+
+  var a = 10,
+      b = 10,
+      i,
+      c,
+      d,
+      x;
+
+  function f() {
+
+  }
+
+  for(i = 0; i &lt; 10; i++) {
+    c = a * b * i;
+  }
+
+
+
+  d = 100;
+  x = function() {
+    return d * d;
+  };
+  log(x());
+
+}(window.console.log));
+</code></pre><p>把赋值尽量写在变量申明中。</p>
 <p>不推荐</p>
 <pre><code>var a,
     b,
