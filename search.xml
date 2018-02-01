@@ -6,7 +6,7 @@
       <title><![CDATA[js中的+操作符深入探究]]></title>
       <url>/2018/01/27/2018-1-27/</url>
       <content type="html"><![CDATA[<h2 id="javascript是弱类型语言"><a href="#javascript是弱类型语言" class="headerlink" title="javascript是弱类型语言"></a>javascript是弱类型语言</h2><p>先来上几个概念：</p>
-<p><img src="/2018/01/27/2018-1-27/weak-or-strong.jpg" alt=""></p>
+<p><img src="/2018/01/27/2018-1-27/weak_or_strong.jpg" alt="weak_or_wtrong"></p>
 <p>图中的两条交叉线所形成的四块区域分别代表了</p>
 <ol>
 <li>强类型、动态类型检查（左上）</li>
