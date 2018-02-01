@@ -1,0 +1,2183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search> 
+  
+    
+    <entry>
+      <title><![CDATA[js中的+操作符深入探究]]></title>
+      <url>/2018/01/27/2018-1-27/</url>
+      <content type="html"><![CDATA[<h2 id="javascript是弱类型语言"><a href="#javascript是弱类型语言" class="headerlink" title="javascript是弱类型语言"></a>javascript是弱类型语言</h2><p>先来上几个概念：</p>
+<p><img src="/2018/01/27/2018-1-27/weak-or-strong.jpg" alt=""></p>
+<p>图中的两条交叉线所形成的四块区域分别代表了</p>
+<ol>
+<li>强类型、动态类型检查（左上）</li>
+<li>强类型、静态类型检查（右上）</li>
+<li>弱类型、动态类型检查（左下）</li>
+<li>弱类型、静态类型检查（右下）</li>
+</ol>
+<p>不同检查类型系统的语言。</p>
+<p>那什么叫强/弱类型、动/静态类型呢？</p>
+<p>在此之前还要定义几个基础概念。</p>
+<p>以下算学术界的一种相对“严格”的说法：（摘自知乎大神）</p>
+<h3 id="Program-Errors"><a href="#Program-Errors" class="headerlink" title="Program Errors"></a>Program Errors</h3><ul>
+<li>trapped errors。导致程序终止执行，如除0，Java中数组越界访问</li>
+<li>untrapped errors。 出错后继续执行，但可能出现任意行为。如C里的缓冲区溢出、Jump到错误地址</li>
+</ul>
+<h3 id="Forbidden-Behaviours"><a href="#Forbidden-Behaviours" class="headerlink" title="Forbidden Behaviours"></a>Forbidden Behaviours</h3><p>语言设计时，可以定义一组forbidden behaviors. 它必须包括所有untrapped errors, 但可能包含trapped errors.</p>
+<h3 id="Well-behaved、ill-behaved"><a href="#Well-behaved、ill-behaved" class="headerlink" title="Well behaved、ill behaved"></a>Well behaved、ill behaved</h3><ul>
+<li>well behaved: 如果程序执行不可能出现forbidden behaviors, 则为well behaved。</li>
+<li>ill behaved: 否则为ill behaved</li>
+</ul>
+]]></content>
+      
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[EventLoop深入探究]]></title>
+      <url>/2018/01/22/2018-1-22/</url>
+      <content type="html"><![CDATA[<h2 id="出题"><a href="#出题" class="headerlink" title="出题"></a>出题</h2><p>我们从一道经典的题目开始探索：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">setTimeout(<span class="function"><span class="keyword">function</span>(<span class="params"></span>)</span>&#123;<span class="built_in">console</span>.log(<span class="number">4</span>)&#125;,<span class="number">0</span>);</span><br><span class="line"><span class="keyword">new</span> <span class="built_in">Promise</span>(<span class="function"><span class="keyword">function</span>(<span class="params">resolve</span>)</span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">for</span>( <span class="keyword">var</span> i=<span class="number">0</span> ; i&lt;<span class="number">10000</span> ; i++ )&#123;</span><br><span class="line">        i==<span class="number">9999</span> &amp;&amp; resolve()</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="number">2</span>)</span><br><span class="line">&#125;).then(<span class="function"><span class="keyword">function</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="number">5</span>)</span><br><span class="line">&#125;);</span><br><span class="line"><span class="built_in">console</span>.log(<span class="number">3</span>);</span><br></pre></td></tr></table></figure>
+<h2 id="结果"><a href="#结果" class="headerlink" title="结果"></a>结果</h2><p>1<br>2<br>3<br>5<br>4</p>
+<p>是否和你的答案一致？</p>
+<a id="more"></a>
+<h2 id="涉及概念"><a href="#涉及概念" class="headerlink" title="涉及概念"></a>涉及概念</h2><ul>
+<li>EventLoop(事件循环)</li>
+<li>task queue(任务队列,又称macrotask queue)</li>
+<li>microtask queue(微任务队列)</li>
+<li>task source(任务源)</li>
+</ul>
+<h2 id="分析依赖"><a href="#分析依赖" class="headerlink" title="分析依赖"></a>分析依赖</h2><p>为了保证分析的依据是最权威的，我花了点时间翻译了W3C的文档。</p>
+<p>按照W3C文档的说明，找到了如下资料：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">An event loop has one or more task queues. A task queue is an ordered list of task</span><br></pre></td></tr></table></figure>
+<p>翻译一下：一个EventLoop(事件循环)内有一个到多个task queue(任务队列,又称macrotask queue)，一个task queue(任务队列,又称macrotask queue)是一个任务的有序列表。</p>
+<p>在这之前还有一句话：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">There must be at least one browsing context event loop per user agent, and at most one per unit of related similar-origin browsing contexts.</span><br></pre></td></tr></table></figure>
+<p>翻译过来是：一个浏览器环境最多会有一个EventLoop(事件循环)。</p>
+<p>还有一段内容：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Each task is defined as coming from a specific task source. All the tasks from one particular task source and destined to a particular event loop (e.g., the callbacks generated by timers of a Document, the events fired for mouse movements over that Document, the tasks queued for the parser of that Document) must always be added to the same task queue, but tasks from different task sources may be placed in different task queues.</span><br></pre></td></tr></table></figure>
+<p>翻译为：每个任务都由一个特定的任务源来定义。所有的任务，由同一个任务源生成的任务必须加入同一个任务队列，但从不同的任务来源任务被放置在不同的任务队列。</p>
+<p>文档对于EventLoop(事件循环)的运行机制给出如下解释：</p>
+<p>英文太长就不贴出来了，有兴趣的自己看<a href="https://www.w3.org/TR/html5/webappapis.html#event-loops-definitions" target="_blank" rel="noopener">event-loops-definitions</a></p>
+<p>翻译的结果：</p>
+<p>只要EventLoop(事件循环)存在，它必须持续运行以下步骤:</p>
+<ol>
+<li><p>选择EventLoop(事件循环)的task queue(任务队列,又称macrotask queue)中的最老任务(在浏览器环境下忽略与之关联的文档不活动的任务)，这个任务可以来自于存在的任何task queue(任务队列,又称macrotask queue)。如果找不到任何task queue(任务队列,又称macrotask queue)，会跳到下面的microtask queue(微任务队列)步骤。</p>
+</li>
+<li><p>将事件循环当前运行的任务设置为上一步中选定的任务。</p>
+</li>
+<li><p>运行选定的任务。</p>
+</li>
+<li><p>将EventLoop(事件循环)当前运行的任务设置为null。</p>
+</li>
+<li><p>从它的task queue(任务队列,又称macrotask queue)中删除在run步骤中运行的任务。</p>
+</li>
+<li><p>microtask queue(微任务队列)：执行一个微任务关卡。</p>
+</li>
+<li><p>回到第一步。</p>
+</li>
+</ol>
+<h3 id="宏任务，微任务与任务源"><a href="#宏任务，微任务与任务源" class="headerlink" title="宏任务，微任务与任务源"></a>宏任务，微任务与任务源</h3><p>macro-task与micro-task的具体分类，按照<a href="http://www.ituring.com.cn/article/66566" target="_blank" rel="noopener">promiseA+</a>中的一段介绍如下：</p>
+<p>宏任务（macro-task）: </p>
+<ul>
+<li>script（整体代码）</li>
+<li>setTimeout</li>
+<li>setInterval</li>
+<li>setImmediate</li>
+<li>I/O</li>
+<li>UI rendering</li>
+</ul>
+<p>微任务（micro-task）: </p>
+<ul>
+<li>process.nextTick</li>
+<li>Promises（这里指浏览器实现的原生 Promise）</li>
+<li>Object.observe(已废弃)</li>
+<li>MutationObserver(html5新特性)</li>
+</ul>
+<p>微任务中已知这样的关系：</p>
+<blockquote>
+<p>“process.nextTick 永远大于 promise.then，原因其实很简单。。。在Node中，_tickCallback在每一次执行完TaskQueue中的一个任务后被调用，而这个_tickCallback中实质上干了两件事：1. nextTickQueue中所有任务执行掉(长度最大1e4，Node版本v6.9.1)2.第一步执行完后执行_runMicrotasks函数，执行microtask中的部分(promise.then注册的回调)所以很明显process.nextTick &gt; promise.then”</p>
+</blockquote>
+<p>setTimeout/Promise等我们称之为<strong>任务源</strong>。而进入任务队列的是他们指定的具体执行任务。来自不同任务源的任务会进入到不同的任务队列。其中<code>setTimeout</code>与<code>setInterval</code>是同源的。</p>
+<p>事件循环的顺序，决定了JavaScript代码的执行顺序。它从script(整体代码)开始第一次循环。之后全局上下文进入函数调用栈。直到调用栈清空(只剩全局)，然后执行所有的micro-task。当所有可执行的micro-task执行完毕之后。循环再次从macro-task开始，找到其中一个任务队列执行完毕，然后再执行所有的micro-task，这样一直循环下去。</p>
+<p>其中每一个任务的执行，无论是macro-task还是micro-task，都是借助函数调用栈来完成。</p>
+<p>promise相关：<br><a href="https://promisesaplus.com/differences-from-promises-a" target="_blank" rel="noopener">promiseaplus.com</a></p>
+<p>当中有一条：</p>
+<p><code>onFulfilled and onRejected must be called asynchronously;</code></p>
+<p>翻译为：onFulfilled与onRejected状态必须被同步调用。</p>
+<h2 id="正式分析"><a href="#正式分析" class="headerlink" title="正式分析"></a>正式分析</h2><p>以上面所述信息为我们判断的基本依据，首先script(整体代码)是一个macro-task,所以会被首先推入到task queue(任务队列,又称macrotask queue)中在EventLoop(事件循环)内执行。</p>
+<p>执行过程中发现了有setTimeout，将其提出，放入一个新的task queue(任务队列,又称macrotask queue)中，等待执行。</p>
+<p>执行过程中发现有Promise的resolve回调,根据<code>onFulfilled and onRejected must be called asynchronously;</code>这一原则，它将会被认作为普通的同步事件普通的执行。到此处<strong>打印出1,2</strong>。</p>
+<p>执行过程中发现了有Promise.then，将其提出，放入microtask queue(微任务队列)中，等待执行。</p>
+<p>往下执行发现console.log(3),作为普通的同步事件执行，到此处<strong>打印出3</strong>。</p>
+<p>此时第一个task queue(任务队列,又称macrotask queue)执行完毕，按照上面的顺序，现在应该执行microtask queue(微任务队列)里的所有任务了。发现有一个console.log(5)，执行它。到此处<strong>打印出5</strong>。</p>
+<p>microtask queue(微任务队列)里的所有任务已经执行完毕，该执行下一个task queue(任务队列,又称macrotask queue)了。发现console.log(4)，执行它。到此处<strong>打印出4</strong>。</p>
+<p>此时EventLoop(事件循环)当前任务为null，寻找microtask queue(微任务队列)中是否有未完成任务，发现没有；</p>
+<p>寻找task queue(任务队列,又称macrotask queue)中是否有未完成任务，发现没有；</p>
+<p>EventLoop当前任务保持为null，到此全部事件执行结束。</p>
+<h2 id="再次出题"><a href="#再次出题" class="headerlink" title="再次出题"></a>再次出题</h2><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 此demo需在node环境下运行</span></span><br><span class="line"><span class="built_in">console</span>.log(<span class="string">'golb1'</span>);</span><br><span class="line"></span><br><span class="line">setTimeout(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'timeout1'</span>);</span><br><span class="line">    process.nextTick(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'timeout1_nextTick'</span>);</span><br><span class="line">    &#125;)</span><br><span class="line">    <span class="keyword">new</span> <span class="built_in">Promise</span>(<span class="function"><span class="keyword">function</span>(<span class="params">resolve</span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'timeout1_promise'</span>);</span><br><span class="line">        resolve();</span><br><span class="line">    &#125;).then(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'timeout1_then'</span>)</span><br><span class="line">    &#125;)</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">setImmediate(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'immediate1'</span>);</span><br><span class="line">    process.nextTick(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'immediate1_nextTick'</span>);</span><br><span class="line">    &#125;)</span><br><span class="line">    <span class="keyword">new</span> <span class="built_in">Promise</span>(<span class="function"><span class="keyword">function</span>(<span class="params">resolve</span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'immediate1_promise'</span>);</span><br><span class="line">        resolve();</span><br><span class="line">    &#125;).then(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'immediate1_then'</span>)</span><br><span class="line">    &#125;)</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">process.nextTick(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'glob1_nextTick'</span>);</span><br><span class="line">&#125;)</span><br><span class="line"><span class="keyword">new</span> <span class="built_in">Promise</span>(<span class="function"><span class="keyword">function</span>(<span class="params">resolve</span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'glob1_promise'</span>);</span><br><span class="line">    resolve();</span><br><span class="line">&#125;).then(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'glob1_then'</span>)</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">setTimeout(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'timeout2'</span>);</span><br><span class="line">    process.nextTick(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'timeout2_nextTick'</span>);</span><br><span class="line">    &#125;)</span><br><span class="line">    <span class="keyword">new</span> <span class="built_in">Promise</span>(<span class="function"><span class="keyword">function</span>(<span class="params">resolve</span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'timeout2_promise'</span>);</span><br><span class="line">        resolve();</span><br><span class="line">    &#125;).then(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'timeout2_then'</span>)</span><br><span class="line">    &#125;)</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">process.nextTick(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'glob2_nextTick'</span>);</span><br><span class="line">&#125;)</span><br><span class="line"><span class="keyword">new</span> <span class="built_in">Promise</span>(<span class="function"><span class="keyword">function</span>(<span class="params">resolve</span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'glob2_promise'</span>);</span><br><span class="line">    resolve();</span><br><span class="line">&#125;).then(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'glob2_then'</span>)</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">setImmediate(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'immediate2'</span>);</span><br><span class="line">    process.nextTick(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'immediate2_nextTick'</span>);</span><br><span class="line">    &#125;)</span><br><span class="line">    <span class="keyword">new</span> <span class="built_in">Promise</span>(<span class="function"><span class="keyword">function</span>(<span class="params">resolve</span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'immediate2_promise'</span>);</span><br><span class="line">        resolve();</span><br><span class="line">    &#125;).then(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'immediate2_then'</span>)</span><br><span class="line">    &#125;)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p>代码比较长，没关系，我们先概览一遍。</p>
+<p>首先整个代码段被分配在一个task queue(任务队列,又称macrotask queue)中执行，第一行发现一个同步事件<code>console.log(&#39;golb1&#39;);</code>，直接执行；到此处<strong>打印出golb1</strong>。</p>
+<p>往下执行，发现一个setTimeout事件（timeout1），根据上节提供的信息，setTimeout为一个macro-task，会新建一个task queue(任务队列,又称macrotask queue)并将该任务置于栈顶(命名该任务队列为macro-t，此时队列中有一个事件timeout1)。</p>
+<p>继续往下执行，发现一个setImmediate事件（immediate1），根据上节提供的信息，setImmediate为一个macro-task，会新建一个task queue(任务队列,又称macrotask queue)并将该任务置于栈顶。(命名该任务队列为macro-i，此时队列中有一个事件immediate1)。</p>
+<p>继续往下执行，发现一个process.nextTick事件。根据上节提供的信息，process.nextTick为一个micro-task，会将该任务置于新建的microtask queue(微任务队列)的栈顶。（命名该任务队列为micro-n，此时队列中有一个事件glob1_nextTick）</p>
+<p>继续往下执行，发现一个Promise事件。根据上节提供的信息，Promise实例内的函数为一个同步事件，包括resolved事件。故执行，到此处<strong>打印出glob1_promise</strong>，而其后的then中的代码段为一个micro-task，会将该任务推送到新建的microtask queue(微任务队列)中（命名为micro-t）排队等待执行(此时队列中有一个事件glob1_then)。</p>
+<p>往下执行，发现一个setTimeout事件（timeout2），根据上节提供的信息，setTimeout为一个macro-task，且任务源为setTimeout，由于之前已经新建了一个setTimout专用的task queue(任务队列,又称macrotask queue)，故将该任务推送到该队列中（macro-t）排队等待执行（此时队列中事件按执行先后顺序有timeout1，timeout2）。</p>
+<p>继续往下执行，发现一个process.nextTick事件。根据上节提供的信息，process.nextTick为一个micro-task，且之前有创建process.nextTick专用队列（micro-n），所以会将该任务推送到该队列中micro-n中排队等待执行(此时队列中有事件glob1_nextTick,glob2_nextTick)。</p>
+<p>继续往下执行，发现一个Promise事件。根据上节提供的信息，Promise实例内的函数为一个同步事件，包括resolved事件。故执行，到此处<strong>打印出glob2_promise</strong>，而其后的then中的代码段为一个micro-task，由于之前已经新建了一个promise.then专用队列(micro-t),会将该任务推送到该队列中排队等待执行（此时队列中事件按执行先后顺序有glob1_then，glob2_then）。</p>
+<p>继续往下执行，发现一个setImmediate事件（immediate2），根据上节提供的信息，setImmediate为一个macro-task，由于之前已经新建了一个setImmediate专用的task queue(任务队列,又称macrotask queue)，故将该任务推送到该队列中（macro-i）排队等待执行（此时队列中事件按执行先后顺序有immediate1，immediate2）。</p>
+<p>此时第一个队列任务执行完毕，开始寻找所有可执行的微任务。由上面累积的微任务队列有两个：process.nextTick的任务队列(micro-n)与Promise.then的任务队列(micro-t)，而根据上节中提到的process.nextTick与Promise.then的关系得知，micro-n先执行，故<strong>先后打印出glob1_nextTick与glob2_nextTick</strong>。</p>
+<p>随后micro-t执行，故<strong>先后打印出glob1_then与glob2_then</strong>。</p>
+<p>至此所有微任务被清空，寻找所有可执行的宏任务：有setTimeout的任务队列(macro-t)与setImmediate的任务队列(macro-i)</p>
+<p>两种队列的先后执行关系没有有力资料可以印证，所以我们到此处分析先暂停，把所有结果打出来看看：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">// 结果</span><br><span class="line">golb1</span><br><span class="line">glob1_promise</span><br><span class="line">glob2_promise</span><br><span class="line">glob1_nextTick</span><br><span class="line">glob2_nextTick</span><br><span class="line">glob1_then</span><br><span class="line">glob2_then</span><br><span class="line">timeout1</span><br><span class="line">timeout1_promise</span><br><span class="line">timeout2</span><br><span class="line">timeout2_promise</span><br><span class="line">timeout1_nextTick</span><br><span class="line">timeout2_nextTick</span><br><span class="line">timeout1_then</span><br><span class="line">timeout2_then</span><br><span class="line">immediate1</span><br><span class="line">immediate1_promise</span><br><span class="line">immediate2</span><br><span class="line">immediate2_promise</span><br><span class="line">immediate1_nextTick</span><br><span class="line">immediate2_nextTick</span><br><span class="line">immediate1_then</span><br><span class="line">immediate2_then</span><br></pre></td></tr></table></figure>
+<p>可以看到我们之前的分析都得到了证明，而后面的打印结果说明了：setImmediate的执行顺序是排在setTimeout之后的。那是否有可能是由于代码顺序导致的队列排序先后？我们针对这两个宏任务做实验：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">setImmediate(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'immediate1'</span>);</span><br><span class="line">    process.nextTick(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'immediate1_nextTick'</span>);</span><br><span class="line">    &#125;)</span><br><span class="line">    <span class="keyword">new</span> <span class="built_in">Promise</span>(<span class="function"><span class="keyword">function</span>(<span class="params">resolve</span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'immediate1_promise'</span>);</span><br><span class="line">        resolve();</span><br><span class="line">    &#125;).then(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'immediate1_then'</span>)</span><br><span class="line">    &#125;)</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">setTimeout(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'timeout1'</span>);</span><br><span class="line">    process.nextTick(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'timeout1_nextTick'</span>);</span><br><span class="line">    &#125;)</span><br><span class="line">    <span class="keyword">new</span> <span class="built_in">Promise</span>(<span class="function"><span class="keyword">function</span>(<span class="params">resolve</span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'timeout1_promise'</span>);</span><br><span class="line">        resolve();</span><br><span class="line">    &#125;).then(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'timeout1_then'</span>)</span><br><span class="line">    &#125;)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p>这次我们刻意将setImmediate代码段排在setTimeout前面，再看看执行结果：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">timeout1</span><br><span class="line">timeout1_promise</span><br><span class="line">timeout1_nextTick</span><br><span class="line">timeout1_then</span><br><span class="line">immediate1</span><br><span class="line">immediate1_promise</span><br><span class="line">immediate1_nextTick</span><br><span class="line">immediate1_then</span><br></pre></td></tr></table></figure>
+<p>到此我们至少可以得到一个结论：在node环境下，setTimeout队列会先于setImmediate执行。</p>
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>一个浏览器环境中只有一个事件循环（event loop），一个事件循环中可以有多个任务队列，任务队列又分宏队列（macrotask queue）和微队列（microtask queue），每个任务队列由任务源为单位创建，其中setTimeout与setInterval为同一个任务源。</p>
+<p>事件循环从一个宏任务队列开始（一般是整体代码），如果该宏队列任务全部执行完毕则寻找所有可执行的微任务队列按照任务源的优先级的顺序执行，当所有微任务都执行完毕则寻找所有可执行的其他宏任务队列。如此往复循环直至没有可执行的宏任务为止。</p>
+<p>宏任务源类型：</p>
+<ul>
+<li>script（整体代码）</li>
+<li>setTimeout</li>
+<li>setInterval</li>
+<li>setImmediate</li>
+<li>I/O</li>
+<li>UI rendering</li>
+</ul>
+<p>其中测试得知，在node环境中，setTimeout/setInterval队列比setImmediate队列优先执行。</p>
+<p>微任务源类型：</p>
+<ul>
+<li>process.nextTick</li>
+<li>Promises（这里指浏览器实现的原生 Promise）</li>
+<li>Object.observe(已废弃)</li>
+<li>MutationObserver(html5新特性)</li>
+</ul>
+<p>其中process.nextTick任务队列比Promise.then任务队列优先执行。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://jakearchibald.com/2015/tasks-microtasks-queues-and-schedules/?utm_source=html5weekly&amp;utm_medium=email" target="_blank" rel="noopener">任务队列执行可视化</a><br><a href="https://www.w3.org/TR/html5/webappapis.html#event-loops" target="_blank" rel="noopener">w3.org-EventLoop</a><br><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/EventLoop" target="_blank" rel="noopener">MDN-EventLoop</a><br><a href="http://www.ruanyifeng.com/blog/2014/10/event-loop.html" target="_blank" rel="noopener">阮一峰-JavaScript 运行机制详解：再谈Event Loop</a></p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> javascript </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[从一道面试题理解JavaScript中的this]]></title>
+      <url>/2017/03/13/2017-3-14/</url>
+      <content type="html"><![CDATA[<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>闲话少说，先上题目：</p>
+<pre><code>var x = 20;
+var a = {
+    x: 15,
+    fn: function() {
+        var x = 30;
+        return function() {
+            return this.x;
+        };
+    }
+};
+console.log(a.fn());
+console.log((a.fn())());
+console.log(a.fn()());
+console.log(a.fn()() === (a.fn())());
+console.log(a.fn().call(this));
+console.log(a.fn().call(a));
+</code></pre><p>各位心里是否已经有了答案？<br>现在公布正确答案：</p>
+<a id="more"></a>
+<pre><code>function() {
+    return this.x;
+};
+20
+20
+true
+20
+15
+</code></pre><p>现在来从头开始分析：<br>首先在window对象下挂载了一个x对象值为20;<br>接下来在window对象下挂载了一个a对象，内部挂载一个x对象值为15，一个fn对象值为一个函数表达式，函数返回结果为当前调用该函数的对象下挂载的x的值。</p>
+<h2 id="Q1"><a href="#Q1" class="headerlink" title="Q1"></a>Q1</h2><p>第一个a.fn():<br>我们知道var a = function() {}这种形式的赋值，打印a输出的就是该函数表达式，打印a()得到的就是函数执行完后的返回值，也就是return的值，如果没有return，就默认返回undefined(参考JavaScript语言精粹(修订版)第31页-返回(return)一节的倒数第二段内容)。<br>所以这里如果是打印a.fn，那么结果将是</p>
+<pre><code>function() {
+    var x = 30;
+    return function() {
+        return this.x;
+    };
+}    
+</code></pre><p>而打印a.fn(),也就是打印这个方法return的结果，该方法return的还是一个函数，那就打印出来呗：</p>
+<pre><code>function() {
+    return this.x;
+};
+</code></pre><h2 id="Q2"><a href="#Q2" class="headerlink" title="Q2"></a>Q2</h2><p>第二个：(a.fn())()</p>
+<p>在看第二个问题之前，建议先看一下阮一峰老师的<a href="http://www.ruanyifeng.com/blog/2010/04/using_this_keyword_in_javascript.html" target="_blank" rel="noopener">Javascript的this用法</a>。</p>
+<p>第二个其实就是执行第一问所打印出的函数啦，将a.fn()包起来的括号可有可无，只是有的话更能突出最后一个括号的”执行”的含义。</p>
+<p>看了阮一峰老师关于this的文章以后，我们知道了this的4种使用情况：</p>
+<ol>
+<li>纯粹的函数调用</li>
+<li>作为对象方法的调用</li>
+<li>作为构造函数调用</li>
+<li>apply/call调用</li>
+</ol>
+<p>那么一步步来：a.fn是a对象下面的方法；<br>a.fn()是a对象下面方法执行后返回的结果，结果还是一个函数；<br>(a.fn())()是a对象下面方法执行后返回的结果(还是一个函数，还可以执行并返回结果)执行并返回的结果。<br>也就是说到最后其实上面的(a.fn())()说白了就是执行这个函数并返回结果：</p>
+<pre><code>function() {
+    return this.x;
+};
+</code></pre><p>返回的结果是this.x，我们根据this的4中使用情况一一排除分析：<br>这里有apply或call方法吗？没有，第四种情况排除；<br>这是一个构造函数吗？整段代码没有new关键词，第三种情况排除；<br>这是一个对象方法的调用吗？看到a.fn()，我还真以为这就是在a对象下面的调用了。的确，我们调用了a对象下面的fn方法，得到了一个返回值。可是我们有在a对象下面的fn这一层作用域中使用过this吗？如果在这一层中我们使用某个变量保存了this的值并在后续的返回值中使用，那代码运行的结果还真可能不一样。比如我们改一改代码：</p>
+<pre><code>var x = 20;
+var a = {
+    x: 15,
+    fn: function() {
+        var xx = this.x;
+        return function() {
+            return xx;
+        };
+    }
+};
+</code></pre><p>这下结果将变成</p>
+<pre><code>function() {
+    return this.x;
+};
+15
+15
+true
+15
+15
+</code></pre><p>因为我们在fn所指向的function中保存了this.x，这里的this就指向a对象。为什么？因为fn是a对象下的方法。那么我们这里的(a.fn())()是不是a对象下的方法呢？人家就只是一个返回值，只是我们借a对象下的fn方法之手得到的一个返回值而已！问题到这里，就简化成了：</p>
+<p>执行一个</p>
+<pre><code>function() {
+    return this.x;
+};
+</code></pre><p>这样的函数中，this指向谁？</p>
+<p>相信大家都知道答案了吧。第二问答案：window对象下的x，也就是20；</p>
+<h2 id="Q3"><a href="#Q3" class="headerlink" title="Q3"></a>Q3</h2><p>第三问a.fn()()同第二问，答案20；</p>
+<p>##Q4</p>
+<p>第四问a.fn()() === (a.fn())()就是在问：第三问的答案是否全等于第二问的答案？</p>
+<pre><code>20 === 20 
+</code></pre><p>这个判断的返回值为true不用多说；</p>
+<h2 id="Q5"><a href="#Q5" class="headerlink" title="Q5"></a>Q5</h2><p>第五问a.fn().call(this)：</p>
+<p>不管前面是什么函数，我们在全局环境下调用xxxx().call(this)，这个this都指代window。</p>
+<p>即是说我们传window对象为a.fn()函数的this的指代对象。</p>
+<p>我们再来看看call()方法的定义：</p>
+<blockquote>
+<p>call方法可以用来代替另一个对象调用一个方法。call方法可以将一个函数的对象上下文从初始上下文改变为call()中指定的新对象。</p>
+</blockquote>
+<p>我们看看call方法的用法：</p>
+<pre><code>var func=new function(){this.a=&quot;func&quot;}   
+var myfunc=function(x){   
+    var a=&quot;myfunc&quot;;   
+    alert(this.a);   
+    alert(x);   
+}   
+myfunc.call(func,&quot;var&quot;);
+</code></pre><p>可见myfunc为函数名，后跟call方法后改变了this的指向<strong>并调用了该方法</strong>。</p>
+<p>在理解以上概念的基础上，这个返回结果就是window.x = 20就很容易理解了。</p>
+<h2 id="Q6"><a href="#Q6" class="headerlink" title="Q6"></a>Q6</h2><p>第六问a.fn().call(a)：</p>
+<p>同第五问，我们将a.fn()内部的this对象绑定为a，那么this.x就是a.x就是15。</p>
+]]></content>
+      
+        <categories>
+            
+            <category> 前端 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> JavaScript </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[武汉上哪玩-昙华林]]></title>
+      <url>/2017/03/13/2017-3-27/</url>
+      <content type="html"><![CDATA[<blockquote>
+<p>原文摘抄自<a href="http://travel.sina.com.cn/china/2014-11-26/1604286912.shtml" target="_blank" rel="noopener">新浪旅游</a>。</p>
+</blockquote>
+<p>昙华林位于老武昌的东北角，地处城墙内的花园山北麓与螃蟹岬南麓间，有关这里的传说有两种，一说是巷内有花园，大多种植的是昙花，古时花与华是通假字，故而得名；第二种说法是巷内多住种花人，一坛一花，蔚然成林，后来“坛”讹为“昙”，遂有昙华林。现在的昙华林里虽然难觅昙花的踪迹，但街口那一片桃花开得正盛，颇为惹眼。粉色花朵掩映下的就是昙华林的招牌了。昙华林这条街并不长，只有1200米，但街边那些老建筑和文艺小店如果要细细逛来也能逛上整整一个下午。</p>
+<a id="more"></a>
+<h2 id="文艺青年眼里的昙华林"><a href="#文艺青年眼里的昙华林" class="headerlink" title="文艺青年眼里的昙华林"></a>文艺青年眼里的昙华林</h2><h3 id="大水的店"><a href="#大水的店" class="headerlink" title="大水的店"></a>大水的店</h3><p><img src="/2017/03/13/2017-3-27/thl_1.jpg" alt="昙华林"></p>
+<p><img src="/2017/03/13/2017-3-27/thl_2.jpg" alt="昙华林"></p>
+<p>从街口往里走不久，就能看到这家昙华林最声名在外的店。老板大水不是武汉人，却对武汉了若指掌，店里乱而有序，装修充满了汉味元素，从牛皮纸上画的手绘地图，到从一到万写着武汉地名的阶梯，都能让本地人会心一笑。当然，最出名的还是门口那个写着“个斑马的武汉”的招牌。“个斑马”是一句武汉方言，不算太文明，却是许多武汉土著的口头禅，往往作为语气助词没有恶意。有专家说这个是糟粕，整改后老板把前两个字遮了起来，却没有拆除，武汉式的执拗在这里也可见一斑。这家店有两层楼，一楼卖些小玩意，二楼可以坐下来喝杯咖啡，生意很好，总是站满了人，店员大多淡淡的，不甚热情。</p>
+<p>人均消费：25元<br>推荐：长岛冰茶、巧克力布朗尼<br>地址：昙华林56号<br>推荐指数：★★★★★</p>
+<p>【贴士】人多，周末来很可能没有位置坐，不买东西一般不让拍照。老板自制的武汉手绘地图是特色，第一次来武汉可以买一份。</p>
+<h3 id="罗克慢递"><a href="#罗克慢递" class="headerlink" title="罗克慢递"></a>罗克慢递</h3><p><img src="/2017/03/13/2017-3-27/lkmd_1.jpg" alt="昙华林"></p>
+<p>昙华林73号的这家店，经营的是给未来某个人写信的服务，而投递的时间完全由寄信人决定，可以是1年，也可以是10年，甚至更久。你可以在这里给未来写一份计划、一种期望，又或者只是记录下此时的心情，由罗克慢递的慢递员传递到你手上。除此之外，还可以“品尝”一下美丽的老板娘。从瑞典教区那个门进去，穿过一条小巷子，就会看到店铺在一个小山坡上，店里放着很多植物，二楼有个阳台，可以在上面喝咖啡晒太阳。</p>
+<p>人均消费：27元<br>地址：昙华林73号<br>推荐指数： ★★★★☆<br>【贴士】慢递一年的邮寄费是25，时间越长价格越贵。</p>
+<h3 id="昙华林的光-流失光和影"><a href="#昙华林的光-流失光和影" class="headerlink" title="昙华林的光-流失光和影"></a>昙华林的光-流失光和影</h3><p><img src="/2017/03/13/2017-3-27/thldg_1.jpg" alt="昙华林"></p>
+<p>推荐理由：昙华林的光是武汉老城区超文艺的角落，在不足一米七高的小阁楼里窝一个下午，睡懒觉的猫怎么揉都不会动，还有独一无二的手绘明信片和小玩意儿。这些承载着梦想的小地方，这里是一束光，它要照亮游荡城市高楼间隙里，藏在你心里的那扇窗。每周六这家店都会放映一部文艺气息很浓的电影。</p>
+<p>人均消费：20元<br>推荐：奶茶、鸡尾酒<br>地址：戈甲营32号1-2<br>推荐指数： ★★★★☆</p>
+<h3 id="老武汉眼里的昙华林"><a href="#老武汉眼里的昙华林" class="headerlink" title="老武汉眼里的昙华林"></a>老武汉眼里的昙华林</h3><p>　　在昙华林因为文艺小店为人们所熟知前，在老武汉人的记忆中它是一条历经了百年风雨的老街。创办于1903的武汉第十四中，拥有68年历史的昙华林小学，1861年传入的西式教会医院仁济医院，古教堂，钱钟书之父钱基博故居……数不清的沧桑建筑都在这条街上。</p>
+<h3 id="湖北中医药大学"><a href="#湖北中医药大学" class="headerlink" title="湖北中医药大学"></a>湖北中医药大学</h3><p><img src="/2017/03/13/2017-3-27/hbzyydx_1.jpg" alt="昙华林"></p>
+<p>湖北中医药大学进校门右手边的“雅各健身房”，是武汉市现存最早的三座体育馆之一，是混砖木结构中西合壁二层建筑。当年杜威、侯仁之等中外著名学者都曾在此讲学，1931年武汉大水，蒋介石就在此对下面的灾民演讲。</p>
+<p>【贴士】雅各健身房在校门右边的操场上，需要穿过食堂下去，有时会有人在操场上拍外景。</p>
+<h3 id="崇真堂"><a href="#崇真堂" class="headerlink" title="崇真堂"></a>崇真堂</h3><p><img src="/2017/03/13/2017-3-27/czt_1.jpg" alt="昙华林"></p>
+<p>昙华林街上的老建筑很多，不经意间就会路过一两个。1864年修建的崇真堂是武昌第一座基督教堂。哥特式风格，开尖券窗，可容200人做礼拜。平时这里铁门都是紧闭的，礼拜天可能会开放。也有的老建筑被赋予了新的功能，街口桃花林后的融园就是其中之一，这里的前身是花园山牧师楼，被誉为武汉最美的咖啡馆。屋里保持着民国时期的风格，而屋外的露天咖啡座则有点星巴克的感觉，能感受到古朴与现代的交融。</p>
+<h3 id="融园咖啡"><a href="#融园咖啡" class="headerlink" title="融园咖啡"></a>融园咖啡</h3><p><img src="/2017/03/13/2017-3-27/rykf_1.jpg" alt="昙华林"></p>
+<p>昙华林街上的老建筑很多，不经意间就会路过一两个。1864年修建的崇真堂是武昌第一座基督教堂。哥特式风格，开尖券窗，可容200人做礼拜。平时这里铁门都是紧闭的，礼拜天可能会开放。也有的老建筑被赋予了新的功能，街口桃花林后的融园就是其中之一，这里的前身是花园山牧师楼，被誉为武汉最美的咖啡馆。屋里保持着民国时期的风格，而屋外的露天咖啡座则有点星巴克的感觉，能感受到古朴与现代的交融。</p>
+<p>人均消费：22元<br>推荐：提拉米苏、红豆汤圆<br>地址：昙华林68号<br>推荐指数： ★★★★☆</p>
+<p>【贴士】融园咖啡室内没有暖气，冬天去会有点冷，屋外有一片桃花林，天气好的时候建议坐在外面。</p>
+<h3 id="汉绣"><a href="#汉绣" class="headerlink" title="汉绣"></a>汉绣</h3><p><img src="/2017/03/13/2017-3-27/hx_1.jpg" alt="昙华林"></p>
+<p>有人觉得这种文化老街都大同小异，其实昙华林也有属于自己的汉味元素。政府在昙华林建立了汉绣基地，汉绣服务社、兰绣轩、红绣坊、媚绣苑四家绣坊落户街上。走进一家家汉绣小店，看那些文静的楚女子们低头汉绣，一张张人物、动物、风景跃然纸上，你能感受到楚文化的传承。绣坊一般不大，墙上挂的是绣好的作品，都可以购买，还有一些学员在学习汉绣，看手法都已经非常专业了。</p>
+<p>【贴士】绣坊的老板很健谈，就算不买东西也可以跟他们聊上两句。</p>
+<h3 id="花园山"><a href="#花园山" class="headerlink" title="花园山"></a>花园山</h3><p>位于昙华林街区腹地，东西走向，西麓临近得胜桥的全安巷，西望凤凰山，东北有螃蟹岬作为屏障；南与胭脂山相峙。每当春暖花开或金秋九月，游客络绎不绝，园内最引人注目之处要数建在山麓高处的“佳山草堂”，若登高小憩，可坐揽山川之美，可眺观江湖之胜。</p>
+<h3 id="翁守谦故居1912年"><a href="#翁守谦故居1912年" class="headerlink" title="翁守谦故居1912年"></a>翁守谦故居1912年</h3><p>位于昙华林75号，建造于1895年前后，为二层砖门结构，原有结构及形式均有较大改变。</p>
+<h3 id="晏道刚故居"><a href="#晏道刚故居" class="headerlink" title="晏道刚故居"></a>晏道刚故居</h3><p>位于高家巷17号，建造于1932年。晏道刚(1889-1973)早年参加武昌起义、北伐战争。曾任国民政府委员长侍从室第一处主任，西北“剿匪”总司令部参谋长等职。后参加民革地下组织和迎接解放活动。解放后任湖北省政协委员等职。</p>
+<h2 id="吃货眼里的昙华林"><a href="#吃货眼里的昙华林" class="headerlink" title="吃货眼里的昙华林"></a>吃货眼里的昙华林</h2><h3 id="老面馆"><a href="#老面馆" class="headerlink" title="老面馆"></a>老面馆</h3><p>昙华林吃东西的地方不多，所以一家面馆就显得尤其珍贵。它开在一幢晚清全木结构的老宅里，从昙华林古街邮局旁边的小巷子进去，手边的涂鸦墙上写满了花花绿绿的字。热干面、牛肉面、米酒……大都是地道的武汉美食，在一众小清新咖啡店中，这样一家充满传统汉味的面馆也算是相当独树一帜。因为都是面食，价格不算太贵，如果逛街逛得有点累了，去吃碗武汉特色的热干面，应该挺满足的。</p>
+<p>【贴士】吃热干面别忘了加碗米酒。</p>
+<h3 id="徐刀刀的鲜花饼"><a href="#徐刀刀的鲜花饼" class="headerlink" title="徐刀刀的鲜花饼"></a>徐刀刀的鲜花饼</h3><p><img src="/2017/03/13/2017-3-27/xdddxhb_1.jpg" alt="昙华林"></p>
+<p>“徐刀刀和她的鲜花饼们”算是昙华林街上比较有名的店之一，店面不大，却布置得很温馨，有好多绿植。一进门就是石磨盘改成的桌子，放着包好的鲜花饼、玫瑰布丁和玫瑰汁。鲜花饼馅里有新鲜的玫瑰花瓣，据说每天只卖100个，上午10点开门营业，一般到下午1点左右，鲜花饼就卖完了。鲜花饼比较甜，适合爱吃甜食的人，如果去的时候鲜花饼卖完了，店里还有蛋挞，也是鲜花口味的。</p>
+<p>【贴士】鲜花饼10元一个，有点贵。玫瑰汁里有蜂蜜的味道。</p>
+<h2 id="萌妹子眼里的昙华林"><a href="#萌妹子眼里的昙华林" class="headerlink" title="萌妹子眼里的昙华林"></a>萌妹子眼里的昙华林</h2><h3 id="猫先生的铺子"><a href="#猫先生的铺子" class="headerlink" title="猫先生的铺子"></a>猫先生的铺子</h3><p><img src="/2017/03/13/2017-3-27/mxsdpz_1.jpg" alt="昙华林"></p>
+<p>走到昙华林快街尾的地方才发现这家日系小店，看名字就能知道，这是家喵星人主题的咖啡店。帅哥老板养的几只喵星人平时自由闲散的四处撒欢，或者团成一团找个地方睡觉，心情好的时候也许会去“临幸”一下店里的客人。猫猫的照片、轻松熊、小黄人……整个店风格暖暖的，软软的，还带点宅元素，墙边的架子里有不少手办、模型、复仇者联盟的玩偶，如果是宅男带着女朋友(如果有的话)来就再合适不过了。</p>
+<p>【贴士】店里的饮料比较常规，咖啡、奶茶、鸡尾酒都有，价格不太贵。</p>
+<h3 id="乔巴寿司"><a href="#乔巴寿司" class="headerlink" title="乔巴寿司"></a>乔巴寿司</h3><p><img src="/2017/03/13/2017-3-27/qbss_1.jpg" alt="昙华林"></p>
+<p>如果逛累了，想在萌萌的地方吃饭，在一条小巷子里，有一家海贼王主题的寿司店。从蓝色的大门进去，能看见门口挂着路飞的海盗旗，墙上是各种手绘、通缉令和海贼王的手办，因为叫乔巴寿司，店里的萌系元素不少，如果是海贼迷来想必会觉得十分亲切。这家店在大成路夜市上也有，昙华林这家刚开不久，店员是两个萌妹子，话不多，不过挺亲切的。推荐海贼王寿司，和芝士猪排寿司。</p>
+<p>【贴士】大成路那家长期排队，建议来昙华林新店吃，还有位置坐。</p>
+<h2 id="交通："><a href="#交通：" class="headerlink" title="交通："></a>交通：</h2><p>地铁：轨道交通2号线，螃蟹岬站A2出口<br>公交：15路、108路、34路、43路、576路、584路、586路、573路、64(内环)、606路、74路、717路、729路、777路、811路(螃蟹岬站)539路、566路(解放路站)</p>
+<p>昙华林游览小贴士：在昙华林，强烈建议步行，尽可能慢地走到每一个特色的小店，把玩每栋建筑的风格。小巷子向上之后的小山坡，是俯瞰武汉街景的一个胜地！</p>
+]]></content>
+      
+        <categories>
+            
+            <category> 生活 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> 武汉 </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[fullpage插件使用总结]]></title>
+      <url>/2017/03/06/2017-3-13/</url>
+      <content type="html"><![CDATA[<h2 id="预览"><a href="#预览" class="headerlink" title="预览"></a>预览</h2><p>项目中的宣传页面有提出全屏滚动的需求，于是利用fullpage插件做了一个，demo如下：<br><a href="https://miller547719886.github.io/ShareInWeek/nov-13/index.html#page1" target="_blank" rel="noopener">demo</a></p>
+<h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>fullPage.js 是一个基于 jQuery 的插件，它能够很方便、很轻松的制作出全屏网站，主要功能有：</p>
+<ul>
+<li>支持鼠标滚动</li>
+<li>支持前进后退和键盘控制</li>
+<li>多个回调函数</li>
+<li>支持手机、平板触摸事件</li>
+<li>支持 CSS3 动画</li>
+<li>支持窗口缩放</li>
+<li>窗口缩放时自动调整</li>
+<li>可设置滚动宽度、背景颜色、滚动速度、循环选项、回调、文本对齐方式等等</li>
+</ul>
+<p>fullpage.js兼容jquery1.7以上版本，兼容ie8+浏览器，谷歌、火狐、opera浏览器都兼容。</p>
+<a id="more"></a>
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p>常见的配置如下：</p>
+<pre><code>$(function(){
+       $(&apos;#dowebok&apos;).fullpage({
+        slidesColor: [&apos;#0075D1&apos;, &apos;#C2E5FF&apos;, &apos;#FDF6E1&apos;, &apos;#E9E9E9&apos;, &apos;#F3F3F3&apos;, &apos;#F9F3DC&apos;],//每一屏的背景色
+        anchors: [&apos;page1&apos;, &apos;page2&apos;, &apos;page3&apos;, &apos;page4&apos;, &apos;page5&apos;, &apos;page6&apos;],//每一屏的锚点名称
+        navigation：false//是否显示项目导航
+        navigationPosition：right,//项目导航的位置，可选 left 或 right
+        afterRender: function(){
+            //此处为页面渲染后执行的事件
+           })，
+        afterLoad: function (anchorLink,index) {
+            //此处为跳转到该屏时执行的事件，参数anchorLink 是锚链接的名称，index 是section的索引，从1开始计算
+        }，
+        onLeave: function (index,nextIndex，direction) {
+            /* 此处为离开该屏时执行的事件，参数index 是section的索引，从1开始计算，
+               nextIndex 是滚动到的“页面”的序号，从1开始计算；direction 判断往上滚动还是往下滚动，值是 up 或 down。*/
+        }
+});
+</code></pre><h2 id="使用自定义导航"><a href="#使用自定义导航" class="headerlink" title="使用自定义导航"></a>使用自定义导航</h2><p>有时我们想自己设定导航的样式，可以不使用配置中默认的navigation选项，使用menu选项指定我们自定义的导航所对应的dom结构。<br>    menu：”#menu”<br>在dom结构中：</p>
+<pre><code>&lt;ul id=&quot;menu&quot;&gt;
+    &lt;li data-menuanchor=&quot;page1&quot; class=&quot;active&quot;&gt;
+        &lt;a href=&quot;#page1&quot;&gt;
+        &lt;/a&gt;
+    &lt;/li&gt;
+    &lt;li data-menuanchor=&quot;page2&quot; class=&quot;&quot;&gt;
+        &lt;a href=&quot;#page2&quot;&gt;
+        &lt;/a&gt;
+    &lt;/li&gt;
+    &lt;li data-menuanchor=&quot;page3&quot; class=&quot;&quot;&gt;
+        &lt;a href=&quot;#page3&quot;&gt;
+        &lt;/a&gt;
+    &lt;/li&gt;
+&lt;/ul&gt;
+</code></pre><p>这样就能够让我们绑定菜单，从而可以控制滚动。</p>
+]]></content>
+      
+        <categories>
+            
+            <category> 前端 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> jQuery插件 </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[前端代码规范-html]]></title>
+      <url>/2017/03/01/2017-3-9/</url>
+      <content type="html"><![CDATA[<h2 id="文档类型"><a href="#文档类型" class="headerlink" title="文档类型"></a>文档类型</h2><p>推荐使用 HTML5 的文档类型申明： &lt;!DOCTYPE html\&gt;.</p>
+<p>（建议使用 text/html 格式的 HTML。避免使用 XHTML。XHTML 以及它的属性，比如 application/xhtml+xml 在浏览器中的应用支持与优化空间都十分有限）。</p>
+<p>HTML 中最好不要将无内容元素[^1] 的标签闭合，例如：使用 &lt;br&gt; 而非 &lt;br /&gt;.</p>
+<h2 id="HTML-验证"><a href="#HTML-验证" class="headerlink" title="HTML 验证"></a>HTML 验证</h2><p>一般情况下，建议使用能通过标准规范验证的 HTML 代码，除非在性能优化和控制文件大小上不得不做出让步。</p>
+<p>使用诸如 W3C HTML validator 这样的工具来进行检测。</p>
+<p>规范化的 HTML 是显现技术要求与局限的显著质量基线，它促进了 HTML 被更好地运用。</p>
+<a id="more"></a>
+<p>不推荐</p>
+<pre><code>&lt;title&gt;Test&lt;/title&gt;
+&lt;article&gt;This is only a test.
+</code></pre><p>推荐</p>
+<pre><code>&lt;!DOCTYPE html&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;title&gt;Test&lt;/title&gt;
+&lt;article&gt;This is only a test.&lt;/article&gt;
+</code></pre><h2 id="省略可选标签"><a href="#省略可选标签" class="headerlink" title="省略可选标签"></a>省略可选标签</h2><p>HTML5 规范中规定了 HTML 标签是可以省略的。但从可读性来说，在开发的源文件中最好不要这样做，因为省略标签可能会导致一些问题。</p>
+<p>省略一些可选的标签确实使得页面大小减少，这很有用，尤其是对于一些大型网站来说。为了达到这一目的，我们可以在开发后期对页面进行压缩处理，在这个环节中这些可选的标签完全就可以省略掉了。</p>
+<h2 id="脚本加载"><a href="#脚本加载" class="headerlink" title="脚本加载"></a>脚本加载</h2><p>出于性能考虑，脚本异步加载很关键。一段脚本放置在 &lt;head&gt; 内，比如 &lt;script src=”main.js”&gt;&lt;/script&gt;，其加载会一直阻塞 DOM 解析，直至它完全地加载和执行完毕。这会造成页面显示的延迟。特别是一些重量级的脚本，对用户体验来说那真是一个巨大的影响。</p>
+<p>异步加载脚本可缓解这种性能影响。如果只需兼容 IE10+，可将 HTML5 的 async 属性加至脚本中，它可防止阻塞 DOM 的解析，甚至你可以将脚本引用写在 &lt;head&gt; 里也没有影响。</p>
+<p>如需兼容老旧的浏览器，实践表明可使用用来动态注入脚本的脚本加载器。你可以考虑 yepnope 或 labjs。注入脚本的一个问题是：一直要等到 CSS 对象文档已就绪，它们才开始加载（短暂地在 CSS 加载完毕之后），这就对需要及时触发的 JS 造成了一定的延迟，这多多少少也影响了用户体验吧。</p>
+<p>终上所述，兼容老旧浏览器(IE9-)时，应该遵循以下最佳实践。</p>
+<p>脚本引用写在 body 结束标签之前，并带上 async 属性。这虽然在老旧浏览器中不会异步加载脚本，但它只阻塞了 body 结束标签之前的 DOM 解析，这就大大降低了其阻塞影响。而在现代浏览器中，脚本将在 DOM 解析器发现 body 尾部的 script 标签才进行加载，此时加载属于异步加载，不会阻塞 CSSOM（但其执行仍发生在 CSSOM 之后）。</p>
+<p>所有浏览器中，推荐</p>
+<pre><code>&lt;html&gt;
+  &lt;head&gt;
+    &lt;link rel=&quot;stylesheet&quot; href=&quot;main.css&quot;&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;!-- body goes here --&gt;
+
+    &lt;script src=&quot;main.js&quot; async&gt;&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</code></pre><p>只在现代浏览器中，推荐</p>
+<pre><code>&lt;html&gt;
+  &lt;head&gt;
+    &lt;link rel=&quot;stylesheet&quot; href=&quot;main.css&quot;&gt;
+    &lt;script src=&quot;main.js&quot; async&gt;&lt;/script&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;!-- body goes here --&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</code></pre><h2 id="语义化"><a href="#语义化" class="headerlink" title="语义化"></a>语义化</h2><p>根据元素（有时被错误地称作“标签”）其被创造出来时的初始意义来使用它。打个比方，用 heading 元素来定义头部标题，p 元素来定义文字段落，用 a 元素来定义链接锚点，等等。</p>
+<p>有根据有目的地使用 HTML 元素，对于可访问性、代码重用、代码效率来说意义重大。</p>
+<p>以下示例列出了一些的语义化 HTML 主要情况：</p>
+<p>不推荐</p>
+<pre><code>&lt;b&gt;My page title&lt;/b&gt;
+&lt;div class=&quot;top-navigation&quot;&gt;
+    &lt;div class=&quot;nav-item&quot;&gt;&lt;a href=&quot;#home&quot;&gt;Home&lt;/a&gt;&lt;/div&gt;
+    &lt;div class=&quot;nav-item&quot;&gt;&lt;a href=&quot;#news&quot;&gt;News&lt;/a&gt;&lt;/div&gt;
+    &lt;div class=&quot;nav-item&quot;&gt;&lt;a href=&quot;#about&quot;&gt;About&lt;/a&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;news-page&quot;&gt;
+    &lt;div class=&quot;page-section news&quot;&gt;
+        &lt;div class=&quot;title&quot;&gt;All news articles&lt;/div&gt;
+        &lt;div class=&quot;news-article&quot;&gt;
+        &lt;h2&gt;Bad article&lt;/h2&gt;
+        &lt;div class=&quot;intro&quot;&gt;Introduction sub-title&lt;/div&gt;
+        &lt;div class=&quot;content&quot;&gt;This is a very bad example for HTML semantics&lt;/div&gt;
+        &lt;div class=&quot;article-side-notes&quot;&gt;I think I&apos;m more on the side and should not receive the main credits&lt;/div&gt;
+        &lt;div class=&quot;article-foot-notes&quot;&gt;
+            This article was created by David &lt;div class=&quot;time&quot;&gt;2014-01-01 00:00&lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+
+     &lt;div class=&quot;section-footer&quot;&gt;
+            Related sections: Events, Public holidays
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;page-footer&quot;&gt;
+    Copyright 2014
+&lt;/div&gt;
+</code></pre><p>推荐</p>
+<pre><code>&lt;!-- The page header should go into a header element --&gt;
+&lt;header&gt;
+  &lt;!-- As this title belongs to the page structure it&apos;s a heading and h1 should be used --&gt;
+  &lt;h1&gt;My page title&lt;/h1&gt;
+&lt;/header&gt;
+
+&lt;!-- All navigation should go into a nav element --&gt;
+&lt;nav class=&quot;top-navigation&quot;&gt;
+  &lt;!-- A listing of elements should always go to UL (OL for ordered listings) --&gt;
+  &lt;ul&gt;
+    &lt;li class=&quot;nav-item&quot;&gt;&lt;a href=&quot;#home&quot;&gt;Home&lt;/a&gt;&lt;/li&gt;
+    &lt;li class=&quot;nav-item&quot;&gt;&lt;a href=&quot;#news&quot;&gt;News&lt;/a&gt;&lt;/li&gt;
+    &lt;li class=&quot;nav-item&quot;&gt;&lt;a href=&quot;#about&quot;&gt;About&lt;/a&gt;&lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/nav&gt;
+
+&lt;!-- The main part of the page should go into a main element (also use role=&quot;main&quot; for accessibility) --&gt;
+&lt;main class=&quot;news-page&quot; role=&quot;main&quot;&gt;
+  &lt;!-- A section of a page should go into a section element. Divide a page into sections with semantic elements. --&gt;
+  &lt;section class=&quot;page-section news&quot;&gt;
+    &lt;!-- A section header should go into a section element --&gt;
+    &lt;header&gt;
+      &lt;!-- As a page section belongs to the page structure heading elements should be used (in this case h2) --&gt;
+      &lt;h2 class=&quot;title&quot;&gt;All news articles&lt;/h2&gt;
+    &lt;/header&gt;
+
+    &lt;!-- If a section / module can be seen as an article (news article, blog entry, products teaser, any other
+     re-usable module / section that can occur multiple times on a page) a article element should be used --&gt;
+    &lt;article class=&quot;news-article&quot;&gt;
+      &lt;!-- An article can contain a header that contains the summary / introduction information of the article --&gt;
+      &lt;header&gt;
+        &lt;!-- As a article title does not belong to the overall page structure there should not be any heading tag! --&gt;
+        &lt;div class=&quot;article-title&quot;&gt;Good article&lt;/div&gt;
+        &lt;!-- Small can optionally be used to reduce importance --&gt;
+        &lt;small class=&quot;intro&quot;&gt;Introduction sub-title&lt;/small&gt;
+      &lt;/header&gt;
+
+      &lt;!-- For the main content in a section or article there is no semantic element --&gt;
+      &lt;div class=&quot;content&quot;&gt;
+        &lt;p&gt;This is a good example for HTML semantics&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;!-- For content that is represented as side note or less important information in a given context use aside --&gt;
+      &lt;aside class=&quot;article-side-notes&quot;&gt;
+        &lt;p&gt;I think I&apos;m more on the side and should not receive the main credits&lt;/p&gt;
+      &lt;/aside&gt;
+      &lt;!-- Articles can also contain footers. If you have footnotes for an article place them into a footer element --&gt;
+      &lt;footer class=&quot;article-foot-notes&quot;&gt;
+        &lt;!-- The time element can be used to annotate a timestamp. Use the datetime attribute to specify ISO time
+         while the actual text in the time element can also be more human readable / relative --&gt;
+        &lt;p&gt;This article was created by David &lt;time datetime=&quot;2014-01-01 00:00&quot; class=&quot;time&quot;&gt;1 month ago&lt;/time&gt;&lt;/p&gt;
+      &lt;/footer&gt;
+    &lt;/article&gt;
+
+    &lt;!-- In a section, footnotes or similar information can also go into a footer element --&gt;
+    &lt;footer class=&quot;section-footer&quot;&gt;
+      &lt;p&gt;Related sections: Events, Public holidays&lt;/p&gt;
+    &lt;/footer&gt;
+  &lt;/section&gt;
+&lt;/main&gt;
+
+&lt;!-- Your page footer should go into a global footer element --&gt;
+&lt;footer class=&quot;page-footer&quot;&gt;
+  Copyright 2014
+&lt;/footer&gt;
+</code></pre><h2 id="多媒体回溯"><a href="#多媒体回溯" class="headerlink" title="多媒体回溯"></a>多媒体回溯</h2><p>对页面上的媒体而言，像图片、视频、canvas 动画等，要确保其有可替代的接入接口。图片文件我们可采用有意义的备选文本（alt），视频和音频文件我们可以为其加上说明文字或字幕。</p>
+<p>提供可替代内容对可用性来说十分重要。试想，一位盲人用户如何能知晓一张图片是什么，要是没有 @alt 的话。</p>
+<p>（图片的 alt 属性是可不填写内容的，纯装饰性的图片就可用这么做：alt=””）。</p>
+<p>不推荐</p>
+<pre><code>&lt;img src=&quot;luke-skywalker.jpg&quot;&gt;
+</code></pre><p>推荐</p>
+<pre><code>&lt;img src=&quot;luke-skywalker.jpg&quot; alt=&quot;Luke skywalker riding an alien horse&quot;&gt;
+</code></pre><p>尽量用 alt 标签去描述图片，设想你需要对于那些只能通过语音或者看不见图片的用户表达图片到底是什么。</p>
+<p>不推荐</p>
+<pre><code>&lt;img src=&quot;huge-spaceship-approaching-earth.jpg&quot; alt=&quot;Header image&quot;&gt;
+</code></pre><p>推荐</p>
+<pre><code>&lt;img src=&quot;huge-spaceship-approaching-earth.jpg&quot; alt=&quot;A huge spaceship that is approaching the earth&quot;&gt;
+</code></pre><h2 id="关注点分离"><a href="#关注点分离" class="headerlink" title="关注点分离"></a>关注点分离</h2><p>理解 web 中如何和为何区分不同的关注点，这很重要。这里的关注点主要指的是：信息（HTML 结构）、外观（CSS）和行为（JavaScript）。为了使它们成为可维护的干净整洁的代码，我们要尽可能的将它们分离开来。</p>
+<p>严格地保证结构、表现、行为三者分离，并尽量使三者之间没有太多的交互和联系。</p>
+<p>就是说，尽量在文档和模板中只包含结构性的 HTML；而将所有表现代码，移入样式表中；将所有动作行为，移入脚本之中。</p>
+<p>在此之外，为使得它们之间的联系尽可能的小，在文档和模板中也尽量少地引入样式和脚本文件。</p>
+<p>清晰的分层意味着：</p>
+<ul>
+<li>超过一到两张样式表（i.e. main.css, vendor.css）</li>
+<li>用超过一到两个脚本（学会用合并脚本）</li>
+<li>用行内样式（&lt;style&gt;.no-good {}&lt;/style&gt;）</li>
+<li>元素上使用 style 属性（&lt;hr style=”border-top: 5px solid black”&gt;）</li>
+<li>用行内脚本（&lt;script&gt;alert(‘no good’)&lt;/script&gt;）</li>
+<li>用表象元素（i.e. &lt;b&gt;, &lt;u&gt;, &lt;center&gt;, &lt;font&gt;, &lt;b&gt;）</li>
+<li>用表象 class 名（i.e. red, left, center）</li>
+</ul>
+<p>不推荐</p>
+<pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;link rel=&quot;stylesheet&quot; href=&quot;base.css&quot;&gt;
+  &lt;link rel=&quot;stylesheet&quot; href=&quot;grid.css&quot;&gt;
+  &lt;link rel=&quot;stylesheet&quot; href=&quot;type.css&quot;&gt;
+  &lt;link rel=&quot;stylesheet&quot; href=&quot;modules/teaser.css&quot;&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1 style=&quot;font-size: 3rem&quot;&gt;&lt;/h1&gt;
+  &lt;b&gt;I&apos;m a subtitle and I&apos;m bold!&lt;/b&gt;
+  &lt;center&gt;Dare you center me!&lt;/center&gt;
+  &lt;script&gt;
+    alert(&apos;Just dont...&apos;);
+  &lt;/script&gt;
+  &lt;div class=&quot;red&quot;&gt;I&apos;m important!&lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre><p>推荐</p>
+<pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;!-- Concatinate your style sheets into a single one --&gt;
+  &lt;link rel=&quot;stylesheet&quot; href=&quot;main.css&quot;&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;!-- Don&apos;t use style attributes but assign sensible classes and apply styles in the stylesheet --&gt;
+  &lt;h1 class=&quot;title&quot;&gt;&lt;/h1&gt;
+  &lt;!-- Don&apos;t use presentational elements and assign sensible classes --&gt;
+  &lt;div class=&quot;sub-title&quot;&gt;I&apos;m a subtitle and I&apos;m bold!&lt;/div&gt;
+  &lt;!-- Maybe your comments get centered in your presentation but that decision is up to the stylesheet --&gt;
+  &lt;span class=&quot;comment&quot;&gt;Dare you center me!&lt;/span&gt;
+  &lt;!-- You wanted to make it red because it&apos;s important so then also name the class important and decide in the stylesheet
+   what you want to do with it --&gt;
+  &lt;div class=&quot;important&quot;&gt;I&apos;m important!&lt;/div&gt;
+
+  &lt;!-- Put all your scripts into files and concatinate them into a single one --&gt;
+  &lt;script async src=&quot;main.js&quot;&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre><h2 id="HTML内容至上"><a href="#HTML内容至上" class="headerlink" title="HTML内容至上"></a>HTML内容至上</h2><p>不要让非内容信息污染了你的 HTML。现在貌似有一种倾向：通过 HTML 来解决设计问题，这是显然是不对的。HTML 就应该只关注内容。</p>
+<p>HTML 标签的目的，就是为了不断地展示内容信息。</p>
+<ul>
+<li>引入一些特定的 HTML 结构来解决一些视觉设计问题</li>
+<li>将 img 元素当做专门用来做视觉设计的元素</li>
+</ul>
+<p>以下例子展示了误将 HTML 用来解决设计问题的这两种情况：</p>
+<p>不推荐</p>
+<pre><code>&lt;!-- We should not introduce an additional element just to solve a design problem  --&gt;
+&lt;span class=&quot;text-box&quot;&gt;
+    &lt;span class=&quot;square&quot;&gt;&lt;/span&gt;
+    See the square next to me?
+&lt;/span&gt;
+
+
+.text-box &gt; .square {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    background-color: red;
+}
+</code></pre><p>推荐</p>
+<pre><code>&lt;!-- That&apos;s clean markup! --&gt;
+&lt;span class=&quot;text-box&quot;&gt;
+    See the square next to me?
+&lt;/span&gt;
+
+
+/* We use a :before pseudo element to solve the design problem of placing a colored square in front of the text content */
+.text-box:before {
+  content: &quot;&quot;;
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  background-color: red;
+}
+</code></pre><p>图片和 SVG 图形能被引入到 HTML 中的唯一理由是它们呈现出了与内容相关的一些信息。</p>
+<p>不推荐</p>
+<pre><code>&lt;!-- Content images should never be used for design elements!  --&gt;
+&lt;span class=&quot;text-box&quot;&gt;
+  &lt;img src=&quot;square.svg&quot; alt=&quot;Square&quot; /&gt;
+  See the square next to me?
+&lt;/span&gt;
+</code></pre><p>推荐</p>
+<pre><code>&lt;!-- That&apos;s clean markup! --&gt;
+&lt;span class=&quot;text-box&quot;&gt;
+  See the square next to me?
+&lt;/span&gt;
+
+
+/* We use a :before pseudo element with a background image to solve the problem */
+.text-box:before {
+  content: &quot;&quot;;
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  background: url(square.svg) no-repeat;
+  background-size: 100%;
+}
+</code></pre><h2 id="Type-属性"><a href="#Type-属性" class="headerlink" title="Type 属性"></a>Type 属性</h2><p>省略样式表与脚本上的 type 属性。鉴于 HTML5 中以上两者默认的 type 值就是 text/css 和 text/javascript，所以 type 属性一般是可以忽略掉的。甚至在老旧版本的浏览器中这么做也是安全可靠的。</p>
+<p>不推荐</p>
+<pre><code>&lt;link rel=&quot;stylesheet&quot; href=&quot;main.css&quot; type=&quot;text/css&quot;&gt;
+&lt;script src=&quot;main.js&quot; type=&quot;text/javascript&quot;&gt;&lt;/script&gt;
+</code></pre><p>推荐</p>
+<pre><code>&lt;link rel=&quot;stylesheet&quot; href=&quot;main.css&quot;&gt;
+&lt;script src=&quot;main.js&quot;&gt;&lt;/script&gt;
+</code></pre><h2 id="可用性"><a href="#可用性" class="headerlink" title="可用性"></a>可用性</h2><p>如果 HTML5 语义化标签使用得当，许多可用性问题已经引刃而解。ARIA 规则在一些语义化的元素上可为其添上默认的可用性角色属性，使用得当的话已使网站的可用性大部分成立。假如你使用 nav, aside, main, footer 等元素，ARIA 规则会在其上应用一些关联的默认值。<br>更多细节可参考 ARIA specification</p>
+<p>另外一些角色属性则能够用来呈现更多可用性情景（i.e. role=”tab”）。</p>
+<h2 id="Tab-Index-在可用性上的运用"><a href="#Tab-Index-在可用性上的运用" class="headerlink" title="Tab Index 在可用性上的运用"></a>Tab Index 在可用性上的运用</h2><p>检查文档中的 tab 切换顺序并传值给元素上的 tabindex，这可以依据元素的重要性来重新排列其 tab 切换顺序。你可以设置 tabindex=”-1” 在任何元素上来禁用其 tab 切换。</p>
+<p>当你在一个默认不可聚焦的元素上增加了功能，你应该总是为其加上 tabindex 属性使其变为可聚焦状态，而且这也会激活其 CSS 的伪类 :focus。选择合适的 tabindex 值，或是直接使用 tabindex=”0” 将元素们组织成同一 tab 顺序水平，并强制干预其自然阅读顺序。</p>
+<h2 id="微格式在-SEO-和可用性上的运用"><a href="#微格式在-SEO-和可用性上的运用" class="headerlink" title="微格式在 SEO 和可用性上的运用"></a>微格式在 SEO 和可用性上的运用</h2><p>如果 SEO 和可用性环境条件允许的话，建议考虑采用微格式。微格式是通过在元素标签上申明一系列特定数据来达成特定语义的方法。</p>
+<p>谷歌、微软和雅虎对如何使用这些额外的数据一定程度上的达成一致，如果正确的使用，这将给搜索引擎优化带来巨大的好处。</p>
+<p>你可以访问 schema.org 获得更多内容细节。</p>
+<p>看一个电影网站的简单例子：</p>
+<p>不带微格式</p>
+<pre><code>&lt;div&gt;
+ &lt;h1&gt;Avatar&lt;/h1&gt;
+ &lt;span&gt;Director: James Cameron (born August 16, 1954)&lt;/span&gt;
+ &lt;span&gt;Science fiction&lt;/span&gt;
+ &lt;a href=&quot;../movies/avatar-theatrical-trailer.html&quot;&gt;Trailer&lt;/a&gt;
+&lt;/div&gt;
+</code></pre><p>带有微格式</p>
+<pre><code>&lt;div itemscope itemtype =&quot;http://schema.org/Movie&quot;&gt;
+  &lt;h1 itemprop=&quot;name&quot;&gt;Avatar&lt;/h1&gt;
+  &lt;div itemprop=&quot;director&quot; itemscope itemtype=&quot;http://schema.org/Person&quot;&gt;
+  Director: &lt;span itemprop=&quot;name&quot;&gt;James Cameron&lt;/span&gt; (born &lt;span itemprop=&quot;birthDate&quot;&gt;August 16, 1954)&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;span itemprop=&quot;genre&quot;&gt;Science fiction&lt;/span&gt;
+  &lt;a href=&quot;../movies/avatar-theatrical-trailer.html&quot; itemprop=&quot;trailer&quot;&gt;Trailer&lt;/a&gt;
+&lt;/div&gt;
+</code></pre><h2 id="ID-和锚点"><a href="#ID-和锚点" class="headerlink" title="ID 和锚点"></a>ID 和锚点</h2><p>通常一个比较好的做法是将页面内所有的头部标题元素都加上 ID. 这样做，页面 URL 的 hash 中带上对应的 ID 名称，即形成描点，方便跳转至对应元素所处位置。</p>
+<p>打个比方，当你在浏览器中输入 URL <a href="http://your-site.com/about#best-practices，浏览器将定位至以下" target="_blank" rel="noopener">http://your-site.com/about#best-practices，浏览器将定位至以下</a> H3 上。</p>
+<pre><code>&lt;h3 id=&quot;best-practices&quot;&gt;Best practices&lt;/h3&gt;
+</code></pre><h2 id="格式化规则"><a href="#格式化规则" class="headerlink" title="格式化规则"></a>格式化规则</h2><p>在每一个块状元素，列表元素和表格元素后，加上一新空白行，并对其子孙元素进行缩进。内联元素写在一行内，块状元素还有列表和表格要另起一行。</p>
+<p>（如果由于换行的空格引发了不可预计的问题，那将所有元素并入一行也是可以接受的，格式警告总好过错误警告）。</p>
+<p>推荐</p>
+<pre><code>&lt;blockquote&gt;
+  &lt;p&gt;&lt;em&gt;Space&lt;/em&gt;, the final frontier.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Moe&lt;/li&gt;
+  &lt;li&gt;Larry&lt;/li&gt;
+  &lt;li&gt;Curly&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th scope=&quot;col&quot;&gt;Income&lt;/th&gt;
+      &lt;th scope=&quot;col&quot;&gt;Taxes&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+          &lt;td&gt;$ 5.00&lt;/td&gt;
+      &lt;td&gt;$ 4.50&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+</code></pre><h2 id="HTML-引号"><a href="#HTML-引号" class="headerlink" title="HTML 引号"></a>HTML 引号</h2><p>使用双引号(“”) 而不是单引号(”) 。</p>
+<p>不推荐</p>
+<pre><code>&lt;div class=&apos;news-article&apos;&gt;&lt;/div&gt;
+</code></pre><p>推荐</p>
+<pre><code>&lt;div class=&quot;news-article&quot;&gt;&lt;/div&gt;
+</code></pre><p>[^1]:此处的空白元素指的是以下元素：area, base, br, col, command, embed, hr, img, input, keygen, link, meta, param, source, track, wbr</p>
+]]></content>
+      
+        <categories>
+            
+            <category> 前端 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> html </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[css命名法-BEM命名法详解]]></title>
+      <url>/2017/03/01/2017-3-11/</url>
+      <content type="html"><![CDATA[<p>BEM的意思就是块（block）、元素（element）、修饰符（modifier）,是由Yandex团队提出的一种前端命名方法论。这种巧妙的命名方法让你的CSS类对其他开发者来说更加透明而且更有意义。BEM命名约定更加严格，而且包含更多的信息，它们用于一个团队开发一个耗时的大项目。</p>
+<p>命名约定的模式如下：</p>
+<pre><code>.block{}  
+.block__element{}  
+.block--modifier{}  
+</code></pre><ul>
+<li>.block 代表了更高级别的抽象或组件。</li>
+<li>.block__element 代表.block的后代，用于形成一个完整的.block的整体。</li>
+<li>.block–modifier代表.block的不同状态或不同版本。</li>
+</ul>
+<p>之所以使用两个连字符和下划线而不是一个，是为了让你自己的块可以用单个连字符来界定，如：</p>
+<pre><code>.site-search{} /* 块 */  
+.site-search__field{} /* 元素 */  
+.site-search--full{} /* 修饰符 */    
+</code></pre><a id="more"></a>
+]]></content>
+      
+        <categories>
+            
+            <category> 前端 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> css </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[前端代码规范-一般规范]]></title>
+      <url>/2017/03/01/2017-3-10/</url>
+      <content type="html"><![CDATA[<h2 id="文件-资源命名"><a href="#文件-资源命名" class="headerlink" title="文件/资源命名"></a>文件/资源命名</h2><p>在 web 项目中，所有的文件名应该都遵循同一命名约定。以可读性而言，减号（-）是用来分隔文件名的不二之选。同时它也是常见的 URL 分隔符（i.e. //example.com/blog/my-blog-entry or //s.example.com/images/big-black-background.jpg），所以理所当然的，减号应该也是用来分隔资源名称的好选择。</p>
+<p>请确保文件命名总是以字母开头而不是数字。而以特殊字符开头命名的文件，一般都有特殊的含义与用处（比如 compass[^1] 中的下划线就是用来标记跳过直接编译的文件用的）。</p>
+<p>资源的字母名称必须全为小写，这是因为在某些对大小写字母敏感的操作系统中，当文件通过工具压缩混淆后，或者人为修改过后，大小写不同而导致引用文件不同的错误，很难被发现。</p>
+<p>还有一些情况下，需要对文件增加前后缀或特定的扩展名（比如 .min.js, .min.css），抑或一串前缀（比如 3fa89b.main.min.css）。这种情况下，建议使用点分隔符来区分这些在文件名中带有清晰意义的元数据。</p>
+<a id="more"></a>
+<p>不推荐</p>
+<pre><code>MyScript.js
+myCamelCaseName.css
+i_love_underscores.html
+1001-scripts.js
+my-file-min.css
+</code></pre><p>推荐</p>
+<pre><code>my-script.js
+my-camel-case-name.css
+i-love-underscores.html
+thousand-and-one-scripts.js
+my-file.min.css
+</code></pre><h2 id="协议"><a href="#协议" class="headerlink" title="协议"></a>协议</h2><p>不要指定引入资源所带的具体协议。</p>
+<p>当引入图片或其他媒体文件，还有样式和脚本时，URLs 所指向的具体路径，不要指定协议部分（http:, https:），除非这两者协议都不可用。</p>
+<p>不指定协议使得 URL 从绝对的获取路径转变为相对的，在请求资源协议无法确定时非常好用，而且还能为文件大小节省几个字节。</p>
+<p>不推荐</p>
+<pre><code>&lt;script src=&quot;http://cdn.com/foundation.min.js&quot;&gt;&lt;/script&gt;
+</code></pre><p>推荐</p>
+<pre><code>&lt;script src=&quot;//cdn.com/foundation.min.js&quot;&gt;&lt;/script&gt;
+</code></pre><p>不推荐<br>    .example {<br>        background: url(<a href="http://static.example.com/images/bg.jpg" target="_blank" rel="noopener">http://static.example.com/images/bg.jpg</a>);<br>    }</p>
+<p>推荐<br>    .example {<br>        background: url(//static.example.com/images/bg.jpg);<br>    }</p>
+<h2 id="文本缩进"><a href="#文本缩进" class="headerlink" title="文本缩进"></a>文本缩进</h2><p>一次缩进两个空格。</p>
+<pre><code>&lt;ul&gt;
+  &lt;li&gt;Fantastic&lt;/li&gt;
+  &lt;li&gt;Great&lt;/li&gt;
+  &lt;li&gt;
+    &lt;a href=&quot;#&quot;&gt;Test&lt;/a&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+@media screen and (min-width: 1100px) {
+  body {
+      font-size: 100%;
+  }
+}
+
+(function(){
+  var x = 10;
+  function y(a, b) {
+  return {
+     result: (a + b) * x
+    }
+  }
+}());
+</code></pre><h2 id="注释"><a href="#注释" class="headerlink" title="注释"></a>注释</h2><p>注释是你自己与你的小伙伴们了解代码写法和目的的唯一途径。特别是在写一些看似琐碎的无关紧要的代码时，由于记忆点不深刻，注释就变得尤为重要了。</p>
+<p>编写自解释代码只是一个传说，没有任何代码是可以完全自解释的。而代码注释，则是永远也不嫌多。</p>
+<p>当你写注释时一定要注意：不要写你的代码都干了些什么，而要写你的代码为什么要这么写，背后的考量是什么。当然也可以加入所思考问题或是解决方案的链接地址。</p>
+<p>不推荐<br>    var offset = 0;<br>    if(includeLabels) {<br>        // Add offset of 20<br>        offset = 20;<br>    }</p>
+<p>推荐<br>    var offset = 0;<br>    if(includeLabels) {<br>           // If the labels are included we need to have a minimum offset of 20 pixels<br>        // We need to set it explicitly because of the following bug: <a href="http://somebrowservendor.com/issue-tracker/ISSUE-1" target="_blank" rel="noopener">http://somebrowservendor.com/issue-tracker/ISSUE-1</a><br>        offset = 20;<br>    }</p>
+<p>一些注释工具可以帮助你写出更好的注释。JSDoc 或 YUIDoc 就是用来写 JavaScript 注释用的。你甚至可以使用工具来为这些注释生成文档，这也是激励开发者们写注释的一个好方法，因为一旦有了这样方便的生成文档的工具，他们通常会开始花更多时间在注释细节上。</p>
+<h2 id="代码检查"><a href="#代码检查" class="headerlink" title="代码检查"></a>代码检查</h2><p>对于比较宽松自由的编程语言来说，严格遵循编码规范和格式化风格指南就显得极为重要。遵循规范固然很好，但是有自动化流程来确保其执行情况，岂不更佳。Trust is good, control is better.</p>
+<p>对于 JavaScript，建议使用 JSLint 或 JSHint。</p>
+<p>[^1]:Compass 是一个基于 Sass 开源的 CSS 框架，而 Sass 是一个非常流行的 CSS 预编译器。</p>
+]]></content>
+      
+        <categories>
+            
+            <category> 前端 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> 代码规范 </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[前端代码规范-css/sass(scss)]]></title>
+      <url>/2017/02/28/2017-3-7/</url>
+      <content type="html"><![CDATA[<h2 id="ID-and-class-naming"><a href="#ID-and-class-naming" class="headerlink" title="ID and class naming"></a>ID and class naming</h2><p>ID和class(类)名总是使用可以反应元素目的和用途的名称，或其他通用名称。代替表象和晦涩难懂的名称。</p>
+<p>应该首选具体和反映元素目的的名称，因为这些是最可以理解的，而且发生变化的可能性最小。</p>
+<p>通用名称只是多个元素的备用名，他们兄弟元素之间是一样的，没有特别意义。<br>区分他们，使他们具有特殊意义，通常需要为“帮手”。</p>
+<p>尽管class(类)名和ID 的语义化对于计算机解析来说没有什么实际的意义，<br>语义化的名称 通常是正确的选择，因为它们所代表的信息含义，不包含表现的限制。</p>
+<a id="more"></a>
+<p>不推荐</p>
+<pre><code>.fw-800 {
+  font-weight: 800;
+}
+
+.red {
+  color: red;
+}
+</code></pre><p>推荐</p>
+<pre><code>.heavy {
+  font-weight: 800;
+}
+
+.important {
+  color: red;
+}
+</code></pre><h2 id="合理的避免使用ID"><a href="#合理的避免使用ID" class="headerlink" title="合理的避免使用ID"></a>合理的避免使用ID</h2><p>一般情况下ID不应该被应用于样式。<br>ID的样式不能被复用并且每个页面中你只能使用一次ID。<br>使用ID唯一有效的是确定网页或整个站点中的位置。<br>尽管如此，你应该始终考虑使用class，而不是id，除非只使用一次。</p>
+<p>不推荐</p>
+<pre><code>#content .title {
+  font-size: 2em;
+}
+</code></pre><p>推荐</p>
+<pre><code>.content .title {
+  font-size: 2em;
+}
+</code></pre><p>另一个反对使用ID的观点是含有ID选择器权重很高。<br>一个只包含一个ID选择器权重高于包含1000个class(类)名的选择器，这使得它很奇怪。</p>
+<pre><code>// 这个选择器权重高于下面的选择器
+#content .title {
+  color: red;
+}
+
+// than this selector!
+html body div.content.news-content .title.content-title.important {
+  color: blue;
+}
+</code></pre><h2 id="CSS选择器中避免标签名"><a href="#CSS选择器中避免标签名" class="headerlink" title="CSS选择器中避免标签名"></a>CSS选择器中避免标签名</h2><p>当构建选择器时应该使用清晰， 准确和有语义的class(类)名。不要使用标签选择器。 如果你只关心你的class(类)名<br>，而不是你的代码元素，这样会更容易维护。</p>
+<p>从分离的角度考虑,在表现层中不应该分配html标记/语义。<br>它可能是一个有序列表需要被改成一个无序列表，或者一个div将被转换成article。<br>如果你只使用具有实际意义的class(类)名，<br>并且不使用元素选择器，那么你只需要改变你的html标记，而不用改动你的CSS。</p>
+<p>不推荐</p>
+<pre><code>div.content &gt; header.content-header &gt; h2.title {
+  font-size: 2em;
+}
+</code></pre><p>推荐</p>
+<pre><code>.content &gt; .content-header &gt; .title {
+  font-size: 2em;
+}
+</code></pre><h2 id="尽可能的精确"><a href="#尽可能的精确" class="headerlink" title="尽可能的精确"></a>尽可能的精确</h2><p>很多前端开发人员写选择器链的时候不使用 直接子选择器（注：直接子选择器和后代选择器的区别）。<br>有时，这可能会导致疼痛的设计问题并且有时候可能会很耗性能。<br>然而，在任何情况下，这是一个非常不好的做法。<br>如果你不写很通用的，需要匹配到DOM末端的选择器， 你应该总是考虑直接子选择器。</p>
+<p>考虑下面的DOM:</p>
+<pre><code>&lt;article class=&quot;content news-content&quot;&gt;
+  &lt;span class=&quot;title&quot;&gt;News event&lt;/span&gt;
+  &lt;div class=&quot;content-body&quot;&gt;
+    &lt;div class=&quot;title content-title&quot;&gt;
+      Check this out
+    &lt;/div&gt;
+
+    &lt;p&gt;This is a news article content&lt;/p&gt;
+
+    &lt;div class=&quot;teaser&quot;&gt;
+      &lt;div class=&quot;title&quot;&gt;Buy this&lt;/div&gt;
+      &lt;div class=&quot;teaser-content&quot;&gt;Yey!&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/article&gt;
+</code></pre><p>下面的CSS将应用于有title类的全部三个元素。<br>然后，要解决content类下的title类 和 teaser类下的title类下不同的样式，这将需要更精确的选择器再次重写他们的样式。</p>
+<p>不推荐</p>
+<pre><code>.content .title {
+  font-size: 2rem;
+}
+</code></pre><p>推荐</p>
+<pre><code>.content &gt; .title {
+  font-size: 2rem;
+}
+
+.content &gt; .content-body &gt; .title {
+  font-size: 1.5rem;
+}
+
+.content &gt; .content-body &gt; .teaser &gt; .title {
+  font-size: 1.2rem;
+}
+</code></pre><h2 id="缩写属性"><a href="#缩写属性" class="headerlink" title="缩写属性"></a>缩写属性</h2><p>CSS提供了各种缩写属性（如 font 字体）应该尽可能使用，即使在只设置一个值的情况下。</p>
+<p>使用缩写属性对于代码效率和可读性是有很有用的。</p>
+<p>不推荐</p>
+<pre><code>border-top-style: none;
+font-family: palatino, georgia, serif;
+font-size: 100%;
+line-height: 1.6;
+padding-bottom: 2em;
+padding-left: 1em;
+padding-right: 1em;
+padding-top: 0;
+</code></pre><p>推荐</p>
+<pre><code>border-top: 0;
+font: 100%/1.6 palatino, georgia, serif;
+padding: 0 1em 2em;
+</code></pre><h2 id="0-和-单位"><a href="#0-和-单位" class="headerlink" title="0 和 单位"></a>0 和 单位</h2><p>省略“0”值后面的单位。不要在0值后面使用单位，除非有值。</p>
+<p>不推荐</p>
+<pre><code>padding-bottom: 0px;
+margin: 0em;
+</code></pre><p>推荐</p>
+<pre><code>padding-bottom: 0;
+margin: 0;
+</code></pre><h2 id="十六进制表示法"><a href="#十六进制表示法" class="headerlink" title="十六进制表示法"></a>十六进制表示法</h2><p>在可能的情况下，使用3个字符的十六进制表示法。<br>颜色值允许这样表示，<br>3个字符的十六进制表示法更简短。</p>
+<p>始终使用小写的十六进制数字。</p>
+<p>不推荐</p>
+<pre><code>color: #FF33AA;
+</code></pre><p>推荐</p>
+<pre><code>color: #f3a;
+</code></pre><h2 id="ID-和-Class（类）-名的分隔符"><a href="#ID-和-Class（类）-名的分隔符" class="headerlink" title="ID 和 Class（类） 名的分隔符"></a>ID 和 Class（类） 名的分隔符</h2><p>使用连字符（中划线）分隔ID和Class（类）名中的单词。为了增强课理解性，在选择器中不要使用除了连字符（中划线）以为的任何字符（包括没有）来连接单词和缩写。</p>
+<p>另外，作为该标准，预设属性选择器能识别连字符（中划线）作为单词[attribute|=value]的分隔符，<br>所以最好的坚持使用连字符作为分隔符。</p>
+<p>不推荐</p>
+<pre><code>.demoimage {}
+.error_status {}
+</code></pre><p>推荐</p>
+<pre><code>#video-id {}
+.ads-sample {}
+</code></pre><h2 id="Hacks"><a href="#Hacks" class="headerlink" title="Hacks"></a>Hacks</h2><p>避免用户代理检测以及CSS“hacks” – 首先尝试不同的方法。通过用户代理检测或特殊的CSS滤镜，变通的方法和 hacks 很容易解决样式差异。为了达到并保持一个有效的和可管理的代码库，这两种方法都应该被认为是最后的手段。换句话说，从长远来看，用户代理检测和hacks<br>会伤害项目，作为项目往往应该采取阻力最小的途径。也就是说，轻易允许使用用户代理检测和hacks 以后将过于频繁。</p>
+<h2 id="声明顺序"><a href="#声明顺序" class="headerlink" title="声明顺序"></a>声明顺序</h2><p>这是一个选择器内书写CSS属性顺序的大致轮廓。这是为了保证更好的可读性和可扫描重要。</p>
+<p>作为最佳实践，我们应该遵循以下顺序（应该按照下表的顺序）：</p>
+<p>结构性属性：</p>
+<ol>
+<li>display<ol>
+<li>position, left, top, right etc.</li>
+<li>overflow, float, clear etc.</li>
+<li>margin, padding</li>
+</ol>
+</li>
+<li>表现性属性： <ol>
+<li>background, border etc.</li>
+<li>font, text</li>
+</ol>
+</li>
+</ol>
+<p>不推荐</p>
+<pre><code>.box {
+    font-family: &apos;Arial&apos;, sans-serif;
+    border: 3px solid #ddd;
+    left: 30%;
+    position: absolute;
+    text-transform: uppercase;
+        background-color: #eee;
+    right: 30%;
+    isplay: block;
+    font-size: 1.5rem;
+    overflow: hidden;
+    padding: 1em;
+    margin: 1em;
+}
+</code></pre><p>推荐</p>
+<pre><code>.box {
+    display: block;
+    position: absolute;
+    left: 30%;
+    right: 30%;
+    overflow: hidden;
+    margin: 1em;
+    padding: 1em;
+    background-color: #eee;
+    border: 3px solid #ddd;
+    font-family: &apos;Arial&apos;, sans-serif;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+}
+</code></pre><h2 id="声明结束"><a href="#声明结束" class="headerlink" title="声明结束"></a>声明结束</h2><p>为了保证一致性和可扩展性，每个声明应该用分号结束，每个声明换行。</p>
+<p>不推荐</p>
+<pre><code>.test {
+  display: block; height: 100px
+}
+</code></pre><p>推荐</p>
+<pre><code>.test {
+  display: block;
+  height: 100px;
+}
+</code></pre><h2 id="属性名结束"><a href="#属性名结束" class="headerlink" title="属性名结束"></a>属性名结束</h2><p>属性名的冒号后使用一个空格。出于一致性的原因，<br>属性和值（但属性和冒号之间没有空格）的之间始终使用一个空格。</p>
+<p>不推荐</p>
+<pre><code>h3 {
+  font-weight:bold;
+}
+</code></pre><p>推荐</p>
+<pre><code>h3 {
+  font-weight: bold;
+}
+</code></pre><h2 id="选择器和声明分离"><a href="#选择器和声明分离" class="headerlink" title="选择器和声明分离"></a>选择器和声明分离</h2><p>每个选择器和属性声明总是使用新的一行。</p>
+<p>不推荐</p>
+<pre><code>a:focus, a:active {
+  position: relative; top: 1px;
+}
+</code></pre><p>推荐</p>
+<pre><code>h1,
+h2,
+h3 {
+  font-weight: normal;
+  line-height: 1.2;
+}
+</code></pre><h2 id="规则分隔"><a href="#规则分隔" class="headerlink" title="规则分隔"></a>规则分隔</h2><p>规则之间始终有一个空行（双换行符）分隔。</p>
+<p>推荐</p>
+<pre><code>html {
+  background: #fff;
+}
+
+body {
+  margin: auto;
+  width: 50%;
+}
+</code></pre><h2 id="CSS引号"><a href="#CSS引号" class="headerlink" title="CSS引号"></a>CSS引号</h2><p>属性选择器或属性值用双引号（””），而不是单引号（”）括起来。<br>URI值（url()）不要使用引号。</p>
+<p>不推荐</p>
+<pre><code>@import url(&apos;//cdn.com/foundation.css&apos;);
+
+html {
+  font-family: &apos;open sans&apos;, arial, sans-serif;
+}
+
+body:after {
+  content: &apos;pause&apos;;
+}
+</code></pre><p>推荐</p>
+<pre><code>@import url(//cdn.com/foundation.css);
+
+html {
+  font-family: &quot;open sans&quot;, arial, sans-serif;
+}
+
+body:after {
+  content: &quot;pause&quot;;
+}
+</code></pre><h2 id="选择器嵌套-SCSS"><a href="#选择器嵌套-SCSS" class="headerlink" title="选择器嵌套 (SCSS)"></a>选择器嵌套 (SCSS)</h2><p>在Sass中你可以嵌套选择器，这可以使代码变得更清洁和可读。嵌套所有的选择器，但尽量避免嵌套没有任何内容的选择器。<br>如果你需要指定一些子元素的样式属性，而父元素将不什么样式属性，<br>可以使用常规的CSS选择器链。<br>这将防止您的脚本看起来过于复杂。</p>
+<p>不推荐</p>
+<pre><code>// Not a good example by not making use of nesting at all
+.content {
+  display: block;
+}
+
+.content &gt; .news-article &gt; .title {
+  font-size: 1.2em;
+}
+</code></pre><p>不推荐</p>
+<pre><code>// Using nesting is better but not in all cases
+// Avoid nesting when there is no attributes and use selector chains instead
+.content {
+  display: block;
+
+  &gt; .news-article {
+    &gt; .title {
+      font-size: 1.2em;
+    }
+  }
+}
+</code></pre><p>推荐</p>
+<pre><code>// This example takes the best approach while nesting but use selector chains where possible
+.content {
+  display: block;
+
+  &gt; .news-article &gt; .title {
+    font-size: 1.2em;
+  }
+}
+</code></pre><h2 id="嵌套中引入-空行-SCSS"><a href="#嵌套中引入-空行-SCSS" class="headerlink" title="嵌套中引入 空行 (SCSS)"></a>嵌套中引入 空行 (SCSS)</h2><p>嵌套选择器和CSS属性之间空一行。</p>
+<p>不推荐</p>
+<pre><code>.content {
+  display: block;
+  &gt; .news-article {
+    background-color: #eee;
+    &gt; .title {
+      font-size: 1.2em;
+    }
+    &gt; .article-footnote {
+      font-size: 0.8em;
+    }
+  }
+}
+</code></pre><p>推荐</p>
+<pre><code>.content {
+  display: block;
+
+  &gt; .news-article {
+    background-color: #eee;
+
+    &gt; .title {
+      font-size: 1.2em;
+    }
+
+    &gt; .article-footnote {
+      font-size: 0.8em;
+    }
+  }
+}
+</code></pre><h2 id="上下文媒体查询-SCSS"><a href="#上下文媒体查询-SCSS" class="headerlink" title="上下文媒体查询(SCSS)"></a>上下文媒体查询(SCSS)</h2><p>在Sass中，当你嵌套你的选择器时也可以使用上下文媒体查询。<br>在Sass中，你可以在任何给定的嵌套层次中使用媒体查询。<br>由此生成的CSS将被转换，这样的媒体查询将包裹选择器的形式呈现。</p>
+<p>这技术非常方便，<br>有助于保持媒体查询属于的上下文。</p>
+<p>第一种方法这可以让你先写你的手机样式，然后在任何你需要的地方<br>用上下文媒体查询以提供桌面样式。</p>
+<p>不推荐</p>
+<pre><code>// This mobile first example looks like plain CSS where the whole structure of SCSS is repeated
+// on the bottom in a media query. This is error prone and makes maintenance harder as it&apos;s not so easy to relate
+// the content in the media query to the content in the upper part (mobile style)
+
+.content-page {
+  font-size: 1.2rem;
+
+  &gt; .main {
+    background-color: whitesmoke;
+
+        &gt; .latest-news {
+      padding: 1rem;
+
+      &gt; .news-article {
+        padding: 1rem;
+
+        &gt; .title {
+          font-size: 2rem;
+        }
+      }
+    }
+
+    &gt; .content {
+      margin-top: 2rem;
+      padding: 1rem;
+    }
+  }
+
+  &gt; .page-footer {
+    margin-top: 2rem;
+    font-size: 1rem;
+  }
+}
+
+@media screen and (min-width: 641px) {
+  .content-page {
+    font-size: 1rem;
+
+    &gt; .main &gt; .latest-news &gt; .news-article &gt; .title {
+      font-size: 3rem;
+    }
+
+    &gt; .page-footer {
+      font-size: 0.8rem;
+    }
+  }
+}    
+</code></pre><p>推荐</p>
+<pre><code>// This is the same example as above but here we use contextual media queries in order to put the different styles
+// for different media into the right context.
+
+.content-page {
+  font-size: 1.2rem;
+
+  @media screen and (min-width: 641px) {
+    font-size: 1rem;
+  }
+
+  &gt; .main {
+    background-color: whitesmoke;
+
+    &gt; .latest-news {
+      padding: 1rem;
+
+      &gt; .news-article {
+        padding: 1rem;
+
+        &gt; .title {
+          font-size: 2rem;
+
+          @media screen and (min-width: 641px) {
+            font-size: 3rem;
+          }
+        }
+      }
+    }
+
+    &gt; .content {
+      margin-top: 2rem;
+      padding: 1rem;
+    }
+  }
+
+  &gt; .page-footer {
+    margin-top: 2rem;
+    font-size: 1rem;
+
+    @media screen and (min-width: 641px) {
+      font-size: 0.8rem;
+    }
+  }
+}
+</code></pre><h2 id="嵌套顺序和父级选择器-SCSS"><a href="#嵌套顺序和父级选择器-SCSS" class="headerlink" title="嵌套顺序和父级选择器(SCSS)"></a>嵌套顺序和父级选择器(SCSS)</h2><p>当使用Sass的嵌套功能的时候，<br>重要的是有一个明确的嵌套顺序，<br>以下内容是一个SCSS块应具有的顺序。</p>
+<ol>
+<li>当前选择器的样式属性</li>
+<li>父级选择器的伪类选择器 (:first-letter, :hover, :active etc)</li>
+<li>伪类元素 (:before and :after)</li>
+<li>父级选择器的声明样式 (.selected, .active, .enlarged etc.)</li>
+<li>用Sass的上下文媒体查询</li>
+<li>子选择器作为最后的部分</li>
+</ol>
+<p>The following example should illustrate how this ordering will achieve a clear structure while making use of the Sass parent selector.</p>
+<p>推荐</p>
+<pre><code>.product-teaser {
+  // 1. Style attributes
+  display: inline-block;
+  padding: 1rem;
+  background-color: whitesmoke;
+  color: grey;
+
+  // 2. Pseudo selectors with parent selector
+  &amp;:hover {
+    color: black;
+  }
+
+  // 3. Pseudo elements with parent selector
+  &amp;:before {
+    content: &quot;&quot;;
+    display: block;
+    border-top: 1px solid grey;
+  }
+
+  &amp;:after {
+    content: &quot;&quot;;
+    display: block;
+    border-top: 1px solid grey;
+  }
+
+  // 4. State classes with parent selector
+  &amp;.active {
+    background-color: pink;
+    color: red;
+
+    // 4.2. Pseuso selector in state class selector
+    &amp;:hover {
+      color: darkred;
+    }
+  }
+
+  // 5. Contextual media queries
+  @media screen and (max-width: 640px) {
+    display: block;
+    font-size: 2em;
+      }
+
+  // 6. Sub selectors
+  &gt; .content &gt; .title {
+    font-size: 1.2em;
+
+    // 6.5. Contextual media queries in sub selector
+    @media screen and (max-width: 640px) {
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+  }
+}
+</code></pre>]]></content>
+      
+        <categories>
+            
+            <category> 前端 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> css </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[前端代码规范-JavaScript]]></title>
+      <url>/2017/02/28/2017-3-8/</url>
+      <content type="html"><![CDATA[<h2 id="全局命名空间污染与-IIFE"><a href="#全局命名空间污染与-IIFE" class="headerlink" title="全局命名空间污染与 IIFE"></a>全局命名空间污染与 IIFE</h2><p>总是将代码包裹成一个 IIFE(Immediately-Invoked Function Expression)，用以创建独立隔绝的定义域。这一举措可防止全局命名空间被污染。</p>
+<p>IIFE 还可确保你的代码不会轻易被其它全局命名空间里的代码所修改（i.e. 第三方库，window 引用，被覆盖的未定义的关键字等等）。</p>
+<p>不推荐</p>
+<pre><code>var x = 10,
+    y = 100;
+
+// Declaring variables in the global scope is resulting in global scope pollution. All variables declared like this
+// will be stored in the window object. This is very unclean and needs to be avoided.
+console.log(window.x + &apos; &apos; + window.y);
+</code></pre><a id="more"></a>
+<p>推荐</p>
+<pre><code>// We declare a IIFE and pass parameters into the function that we will use from the global space
+(function(log, w, undefined){
+  &apos;use strict&apos;;
+
+  var x = 10,
+      y = 100;
+
+  // Will output &apos;true true&apos;
+  log((w.x === undefined) + &apos; &apos; + (w.y === undefined));
+
+}(window.console.log, window));
+</code></pre><h2 id="IIFE（立即执行的函数表达式）"><a href="#IIFE（立即执行的函数表达式）" class="headerlink" title="IIFE（立即执行的函数表达式）"></a>IIFE（立即执行的函数表达式）</h2><p>无论何时，想要创建一个新的封闭的定义域，那就用 IIFE。它不仅避免了干扰，也使得内存在执行完后立即释放。</p>
+<p>所有脚本文件建议都从 IIFE 开始。</p>
+<p>立即执行的函数表达式的执行括号应该写在外包括号内。虽然写在内还是写在外都是有效的，但写在内使得整个表达式看起来更像一个整体，因此推荐这么做。</p>
+<p>不推荐</p>
+<pre><code>(function(){})();
+</code></pre><p>推荐</p>
+<pre><code>(function(){}());
+</code></pre><p>so，用下列写法来格式化你的 IIFE 代码：</p>
+<pre><code>(function(){
+  &apos;use strict&apos;;
+
+  // Code goes here
+
+}());
+</code></pre><p>如果你想引用全局变量或者是外层 IIFE 的变量，可以通过下列方式传参：</p>
+<pre><code>(function($, w, d){
+  &apos;use strict&apos;;
+
+  $(function() {
+    w.alert(d.querySelectorAll(&apos;div&apos;).length);
+  });
+}(jQuery, window, document));
+</code></pre><p>严格模式</p>
+<p>ECMAScript 5 严格模式可在整个脚本或独个方法内被激活。它对应不同的 javascript 语境会做更加严格的错误检查。严格模式也确保了 javascript 代码更加的健壮，运行的也更加快速。</p>
+<p>严格模式会阻止使用在未来很可能被引入的预留关键字。</p>
+<p>你应该在你的脚本中启用严格模式，最好是在独立的 IIFE 中应用它。避免在你的脚本第一行使用它而导致你的所有脚本都启动了严格模式，这有可能会引发一些第三方类库的问题。</p>
+<p>不推荐</p>
+<pre><code>// Script starts here
+&apos;use strict&apos;;
+
+(function(){
+
+  // Your code starts here
+
+}());
+</code></pre><p>推荐</p>
+<pre><code>(function(){
+  &apos;use strict&apos;;
+
+  // Your code starts here
+
+}());
+</code></pre><h2 id="变量声明"><a href="#变量声明" class="headerlink" title="变量声明"></a>变量声明</h2><p>总是使用 var 来声明变量。如不指定 var，变量将被隐式地声明为全局变量，这将对变量难以控制。如果没有声明，变量处于什么定义域就变得不清（可以是在 Document 或 Window 中，也可以很容易地进入本地定义域）。所以，请总是使用 var 来声明变量。</p>
+<p>采用严格模式带来的好处是，当你手误输入错误的变量名时，它可以通过报错信息来帮助你定位错误出处。</p>
+<p>不推荐</p>
+<pre><code>x = 10;
+y = 100;
+</code></pre><p>推荐</p>
+<pre><code>var x = 10,
+    y = 100;
+</code></pre><h2 id="理解-JavaScript-的定义域和定义域提升"><a href="#理解-JavaScript-的定义域和定义域提升" class="headerlink" title="理解 JavaScript 的定义域和定义域提升"></a>理解 JavaScript 的定义域和定义域提升</h2><p>在 JavaScript 中变量和方法定义会自动提升到执行之前。JavaScript 只有 function 级的定义域，而无其他很多编程语言中的块定义域，所以使得你在某一 function 内的某语句和循环体中定义了一个变量，此变量可作用于整个 function 内，而不仅仅是在此语句或循环体中，因为它们的声明被 JavaScript 自动提升了。</p>
+<p>我们通过例子来看清楚这到底是怎么一回事：</p>
+<p>原 function</p>
+<pre><code>(function(log){
+  &apos;use strict&apos;;
+
+  var a = 10;
+
+  for(var i = 0; i &lt; a; i++) {
+    var b = i * i;
+    log(b);
+  }
+
+  if(a === 10) {
+    var f = function() {
+      log(a);
+    };
+    f();
+  }
+
+  function x() {
+    log(&apos;Mr. X!&apos;);
+  }
+  x();
+
+}(window.console.log));
+</code></pre><p>被 JS 提升过后</p>
+<pre><code>(function(log){
+  &apos;use strict&apos;;
+  // All variables used in the closure will be hoisted to the top of the function
+  var a,
+      i,
+      b,
+      f;
+  // All functions in the closure will be hoisted to the top
+  function x() {
+    log(&apos;Mr. X!&apos;);
+  }
+
+  a = 10;
+
+  for(i = 0; i &lt; a; i++) {
+    b = i * i;
+    log(b);
+  }
+
+  if(a === 10) {
+    // Function assignments will only result in hoisted variables but the function body will not be hoisted
+    // Only by using a real function declaration the whole function will be hoisted with its body
+    f = function() {
+      log(a);
+    };
+    f();
+  }
+
+  x();
+
+}(window.console.log));    
+</code></pre><p>根据以上提升过程，你是否可理解以下代码？</p>
+<p>有效代码</p>
+<pre><code>(function(log){
+  &apos;use strict&apos;;
+
+  var a = 10;
+
+  i = 5;
+
+  x();
+
+  for(var i; i &lt; a; i++) {
+    log(b);
+    var b = i * i;
+  }
+
+  if(a === 10) {
+    f = function() {
+          log(a);
+    };
+    f();
+
+    var f;
+  }
+
+  function x() {
+    log(&apos;Mr. X!&apos;);
+  }
+
+}(window.console.log));
+</code></pre><p>正如你所看到的这段令人充满困惑与误解的代码导致了出人意料的结果。只有良好的声明习惯，也就是下一章节我们要提到的声明规则，才能尽可能的避免这类错误风险。</p>
+<h2 id="提升声明"><a href="#提升声明" class="headerlink" title="提升声明"></a>提升声明</h2><p>为避免上一章节所述的变量和方法定义被自动提升造成误解，把风险降到最低，我们应该手动地显示地去声明变量与方法。也就是说，所有的变量以及方法，应当定义在 function 内的首行。</p>
+<p>只用一个 var 关键字声明，多个变量用逗号隔开。</p>
+<p>不推荐</p>
+<pre><code>(function(log){
+  &apos;use strict&apos;;
+
+  var a = 10;
+  var b = 10;
+
+  for(var i = 0; i &lt; 10; i++) {
+    var c = a * b * i;
+  }
+
+  function f() {
+
+  }
+
+  var d = 100;
+  var x = function() {
+    return d * d;
+  };
+  log(x());
+
+}(window.console.log));
+</code></pre><p>推荐</p>
+<pre><code>(function(log){
+  &apos;use strict&apos;;
+
+  var a = 10,
+      b = 10,
+      i,
+      c,
+      d,
+      x;
+
+  function f() {
+
+  }
+
+  for(i = 0; i &lt; 10; i++) {
+    c = a * b * i;
+  }
+
+
+
+  d = 100;
+  x = function() {
+    return d * d;
+  };
+  log(x());
+
+}(window.console.log));
+</code></pre><p>把赋值尽量写在变量申明中。</p>
+<p>不推荐</p>
+<pre><code>var a,
+    b,
+    c;
+
+a = 10;
+b = 10;
+c = 100;
+</code></pre><p>推荐</p>
+<pre><code>var a = 10,
+    b = 10,
+    c = 100;
+</code></pre><h2 id="总是使用带类型判断的比较判断"><a href="#总是使用带类型判断的比较判断" class="headerlink" title="总是使用带类型判断的比较判断"></a>总是使用带类型判断的比较判断</h2><p>总是使用 === 精确的比较操作符，避免在判断的过程中，由 JavaScript 的强制类型转换所造成的困扰。</p>
+<p>如果你使用 === 操作符，那比较的双方必须是同一类型为前提的条件下才会有效。</p>
+<p>如果你想了解更多关于强制类型转换的信息，你可以读一读 Dmitry Soshnikov 的这篇文章。</p>
+<p>在只使用 == 的情况下，JavaScript 所带来的强制类型转换使得判断结果跟踪变得复杂，下面的例子可以看出这样的结果有多怪了：</p>
+<pre><code>(function(log){
+  &apos;use strict&apos;;
+
+  log(&apos;0&apos; == 0); // true
+  log(&apos;&apos; == false); // true
+  log(&apos;1&apos; == true); // true
+  log(null == undefined); // true
+
+  var x = {
+    valueOf: function() {
+      return &apos;X&apos;;
+    }
+  };
+
+  log(x == &apos;X&apos;);
+
+}(window.console.log));
+</code></pre><h2 id="明智地使用真假判断"><a href="#明智地使用真假判断" class="headerlink" title="明智地使用真假判断"></a>明智地使用真假判断</h2><p>当我们在一个 if 条件语句中使用变量或表达式时，会做真假判断。if(a == true) 是不同于 if(a) 的。后者的判断比较特殊，我们称其为真假判断。这种判断会通过特殊的操作将其转换为 true 或 false，下列表达式统统返回 false：false, 0, undefined, null, NaN, ‘’（空字符串）.</p>
+<p>这种真假判断在我们只求结果而不关心过程的情况下，非常的有帮助。</p>
+<p>以下示例展示了真假判断是如何工作的：</p>
+<pre><code>(function(log){
+  &apos;use strict&apos;;
+
+  function logTruthyFalsy(expr) {
+    if(expr) {
+      log(&apos;truthy&apos;);
+    } else {
+      log(&apos;falsy&apos;);
+    }
+  }
+
+  logTruthyFalsy(true); // truthy
+  logTruthyFalsy(1); // truthy
+  logTruthyFalsy({}); // truthy
+  logTruthyFalsy([]); // truthy
+  logTruthyFalsy(&apos;0&apos;); // truthy
+
+  logTruthyFalsy(false); // falsy
+  logTruthyFalsy(0); // falsy
+  logTruthyFalsy(undefined); // falsy
+  logTruthyFalsy(null); // falsy
+  logTruthyFalsy(NaN); // falsy
+  logTruthyFalsy(&apos;&apos;); // falsy
+
+}(window.console.log));
+</code></pre><h2 id="变量赋值时的逻辑操作"><a href="#变量赋值时的逻辑操作" class="headerlink" title="变量赋值时的逻辑操作"></a>变量赋值时的逻辑操作</h2><p>逻辑操作符 || 和 &amp;&amp; 也可被用来返回布尔值。如果操作对象为非布尔对象，那每个表达式将会被自左向右地做真假判断。基于此操作，最终总有一个表达式被返回回来。这在变量赋值时，是可以用来简化你的代码的。</p>
+<p>不推荐</p>
+<pre><code>if(!x) {
+  if(!y) {
+    x = 1;
+  } else {
+    x = y;
+  }
+}
+</code></pre><p>推荐</p>
+<pre><code>x = x || y || 1;
+</code></pre><p>这一小技巧经常用来给方法设定默认的参数。</p>
+<pre><code>(function(log){
+  &apos;use strict&apos;;
+
+  function multiply(a, b) {
+    a = a || 1;
+    b = b || 1;
+
+    log(&apos;Result &apos; + a * b);
+  }
+
+  multiply(); // Result 1
+  multiply(10); // Result 10
+  multiply(3, NaN); // Result 3
+  multiply(9, 5); // Result 45
+
+}(window.console.log));
+</code></pre><h2 id="分号"><a href="#分号" class="headerlink" title="分号"></a>分号</h2><p>总是使用分号，因为隐式的代码嵌套会引发难以察觉的问题。当然我们更要从根本上来杜绝这些问题<a href="作者指的是采用严格规范的语句写法，从根本上杜绝由分号缺失而引起的代码歧义。">^1</a> 。以下几个示例展示了缺少分号的危害：</p>
+<pre><code>// 1.
+MyClass.prototype.myMethod = function() {
+  return 42;
+}  // No semicolon here.
+
+(function() {
+  // Some initialization code wrapped in a function to create a scope for locals.
+})();
+
+
+var x = {
+  &apos;i&apos;: 1,
+  &apos;j&apos;: 2
+}  // No semicolon here.
+
+// 2.  Trying to do one thing on Internet Explorer and another on Firefox.
+// I know you&apos;d never write code like this, but throw me a bone.
+[ffVersion, ieVersion][isIE]();
+
+
+var THINGS_TO_EAT = [apples, oysters, sprayOnCheese]  // No semicolon here.
+
+// 3. conditional execution a la bash
+-1 == resultOfOperation() || die();
+</code></pre><p>So what happens?</p>
+<ol>
+<li>JavaScript 错误 —— 首先返回 42 的那个 function 被第二个 function 当中参数传入调用，接着数字 42 也被“调用”而导致出错。</li>
+<li>八成你会得到 ‘no such property in undefined’ 的错误提示，因为在真实环境中的调用是这个样子：x[ffVersion, ieVersion]<a href="">isIE</a>.</li>
+<li>die 总是被调用。因为数组减 1 的结果是 NaN，它不等于任何东西（无论 resultOfOperation 是否返回 NaN）。所以最终的结果是 die() 执行完所获得值将赋给 THINGS_TO_EAT.</li>
+</ol>
+<p>Why?</p>
+<p>JavaScript 中语句要以分号结束，否则它将会继续执行下去，不管换不换行。以上的每一个示例中，函数声明或对象或数组，都变成了在一句语句体内。要知道闭合圆括号并不代表语句结束，JavaScript 不会终结语句，除非它的下一个 token 是一个中缀符[^2] 或者是圆括号操作符。</p>
+<p>这真是让人大吃一惊，所以乖乖地给语句末加上分号吧。</p>
+<p><strong>澄清：分号与函数</strong></p>
+<p>分号需要用在表达式的结尾，而并非函数声明的结尾。区分它们最好的例子是：</p>
+<pre><code>var foo = function() {
+  return true;
+};  // semicolon here.
+
+function foo() {
+  return true;
+}  // no semicolon here.
+</code></pre><h2 id="嵌套函数"><a href="#嵌套函数" class="headerlink" title="嵌套函数"></a>嵌套函数</h2><p>嵌套函数是非常有用的，比如用在持续创建和隐藏辅助函数的任务中。你可以非常自由随意地使用它们。</p>
+<h2 id="语句块内的函数声明"><a href="#语句块内的函数声明" class="headerlink" title="语句块内的函数声明"></a>语句块内的函数声明</h2><p>切勿在语句块内声明函数，在 ECMAScript 5 的严格模式下，这是不合法的。函数声明应该在定义域的顶层。但在语句块内可将函数申明转化为函数表达式赋值给变量。</p>
+<p>不推荐</p>
+<pre><code>if (x) {
+  function foo() {}
+}
+</code></pre><p>推荐</p>
+<pre><code>if (x) {
+  var foo = function() {};
+}
+</code></pre><h2 id="异常"><a href="#异常" class="headerlink" title="异常"></a>异常</h2><p>基本上你无法避免出现异常，特别是在做大型开发时（使用应用开发框架等等）。</p>
+<p>在没有自定义异常的情况下，从有返回值的函数中返回错误信息一定非常的棘手，更别提多不优雅了。不好的解决方案包括了传第一个引用类型来接纳错误信息，或总是返回一个对象列表，其中包含着可能的错误对象。以上方式基本上是比较简陋的异常处理方式。适时可做自定义异常处理。</p>
+<p>在复杂的环境中，你可以考虑抛出对象而不仅仅是字符串（默认的抛出值）。</p>
+<pre><code>if(name === undefined) {
+  throw {
+    name: &apos;System Error&apos;,
+    message: &apos;A name should always be specified!&apos;
+  }
+}
+</code></pre><h2 id="标准特性"><a href="#标准特性" class="headerlink" title="标准特性"></a>标准特性</h2><p>总是优先考虑使用标准特性。为了最大限度地保证扩展性与兼容性，总是首选标准的特性，而不是非标准的特性（例如：首选 string.charAt(3) 而不是 string[3]；首选 DOM 的操作方法来获得元素引用，而不是某一应用特定的快捷方法）。</p>
+<h2 id="简易的原型继承"><a href="#简易的原型继承" class="headerlink" title="简易的原型继承"></a>简易的原型继承</h2><p>如果你想在 JavaScript 中继承你的对象，请遵循一个简易的模式来创建此继承。如果你预计你会遇上复杂对象的继承，那可以考虑采用一个继承库，比如 Proto.js by Axel Rauschmayer.</p>
+<p>简易继承请用以下方式：</p>
+<pre><code>(function(log){
+  &apos;use strict&apos;;
+
+  // Constructor function
+  function Apple(name) {
+    this.name = name;
+  }
+  // Defining a method of apple
+  Apple.prototype.eat = function() {
+    log(&apos;Eating &apos; + this.name);
+  };
+
+  // Constructor function
+  function GrannySmithApple() {
+    // Invoking parent constructor
+    Apple.prototype.constructor.call(this, &apos;Granny Smith&apos;);
+  }
+  // Set parent prototype while creating a copy with Object.create
+  GrannySmithApple.prototype = Object.create(Apple.prototype);
+  // Set constructor to the sub type, otherwise points to Apple
+  GrannySmithApple.prototype.constructor = GrannySmithApple;
+
+      // Calling a super method
+      GrannySmithApple.prototype.eat = function() {
+    // Be sure to apply it onto our current object with call(this)
+    Apple.prototype.eat.call(this);
+
+    log(&apos;Poor Grany Smith&apos;);
+  };
+
+  // Instantiation
+  var apple = new Apple(&apos;Test Apple&apos;);
+  var grannyApple = new GrannySmithApple();
+
+  log(apple.name); // Test Apple
+  log(grannyApple.name); // Granny Smith
+
+  // Instance checks
+  log(apple instanceof Apple); // true
+  log(apple instanceof GrannySmithApple); // false
+
+  log(grannyApple instanceof Apple); // true
+  log(grannyApple instanceof GrannySmithApple); // true
+
+  // Calling method that calls super method
+  grannyApple.eat(); // Eating Granny Smith\nPoor Grany Smith
+
+}(window.console.log));
+</code></pre><h2 id="使用闭包"><a href="#使用闭包" class="headerlink" title="使用闭包"></a>使用闭包</h2><p>闭包的创建也许是 JS 最有用也是最易被忽略的能力了。<a href="http://jibbering.com/faq/faq_notes/closures.html" target="_blank" rel="noopener">关于闭包如何工作的合理解释</a>。</p>
+<h2 id="切勿在循环中创建函数"><a href="#切勿在循环中创建函数" class="headerlink" title="切勿在循环中创建函数"></a>切勿在循环中创建函数</h2><p>在简单的循环语句中加入函数是非常容易形成闭包而带来隐患的。下面的例子就是一个典型的陷阱：</p>
+<p>不推荐</p>
+<pre><code>(function(log, w){
+  &apos;use strict&apos;;
+
+  // numbers and i is defined in the current function closure
+  var numbers = [1, 2, 3],
+      i;
+
+  for(i = 0; i &lt; numbers.length; i++) {
+    w.setTimeout(function() {
+      // At the moment when this gets executed the i variable, coming from the outer function scope
+      // is set to 3 and the current program is alerting the message 3 times
+      // &apos;Index 3 with number undefined
+      // If you understand closures in javascript you know how to deal with those cases
+      // It&apos;s best to just avoid functions / new closures in loops as this prevents those issues
+
+      w.alert(&apos;Index &apos; + i + &apos; with number &apos; + numbers[i]);
+    }, 0);
+  }
+
+}(window.console.log, window));
+</code></pre><p>接下来的改进虽然已经解决了上述例子中的问题或 bug，但还是违反了不在循环中创建函数或闭包的原则。</p>
+<p>不推荐</p>
+<pre><code>(function(log, w){
+  &apos;use strict&apos;;
+
+  // numbers and i is defined in the current function closure
+  var numbers = [1, 2, 3],
+      i;
+
+  for(i = 0; i &lt; numbers.length; i++) {
+    // Creating a new closure scope with an IIFE solves the problem
+    // The delayed function will use index and number which are
+    // in their own closure scope (one closure per loop iteration).
+    // ---
+    // Still this is not recommended as we violate our rule to not
+    // create functions within loops and we are creating two!
+
+    (function(index, number){
+      w.setTimeout(function() {
+        // Will output as expected 0 &gt; 1, 1 &gt; 2, 2 &gt; 3
+        w.alert(&apos;Index &apos; + index + &apos; with number &apos; + number);
+      }, 0);
+    }(i, numbers[i]));
+  }
+
+}(window.console.log, window));
+</code></pre><p>接下来的改进已解决问题，而且也遵循了规范。可是，你会发现看上去似乎过于复杂繁冗了，应该会有更好的解决方案吧。</p>
+<p>不完全推荐</p>
+<pre><code>(function(log, w){
+  &apos;use strict&apos;;
+
+  // numbers and i is defined in the current function closure
+  var numbers = [1, 2, 3],
+      i;
+
+  // Create a function outside of the loop that will accept arguments to create a
+  // function closure scope. This function will return a function that executes in this
+  // closure parent scope.
+  function alertIndexWithNumber(index, number) {
+    return function() {
+      w.alert(&apos;Index &apos; + index + &apos; with number &apos; + number);
+    };
+  }
+
+  // First parameter is a function call that returns a function.
+  // ---
+  // This solves our problem and we don&apos;t create a function inside our loop
+  for(i = 0; i &lt; numbers.length; i++) {
+    w.setTimeout(alertIndexWithNumber(i, numbers[i]), 0);
+  }
+
+}(window.console.log, window));
+</code></pre><p>将循环语句转换为函数执行的方式问题能得到立马解决，每一次循环都会对应地创建一次闭包。函数式的风格更加值得推荐，而且看上去也更加地自然和可预料。</p>
+<p>推荐</p>
+<pre><code>(function(log, w){
+  &apos;use strict&apos;;
+
+  // numbers and i is defined in the current function closure
+  var numbers = [1, 2, 3],
+      i;
+
+  numbers.forEach(function(number, index) {
+    w.setTimeout(function() {
+      w.alert(&apos;Index &apos; + index + &apos; with number &apos; + number);
+    }, 0);
+  });
+
+}(window.console.log, window));
+</code></pre><p>eval 函数（魔鬼）</p>
+<p>eval() 不但混淆语境还很危险，总会有比这更好、更清晰、更安全的另一种方案来写你的代码，因此尽量不要使用 evil 函数。</p>
+<p>this 关键字</p>
+<p>只在对象构造器、方法和在设定的闭包中使用 this 关键字。this 的语义在此有些误导。它时而指向全局对象（大多数时），时而指向调用者的定义域（在 eval 中），时而指向 DOM 树中的某一节点（当用事件处理绑定到 HTML 属性上时），时而指向一个新创建的对象（在构造器中），还时而指向其它的一些对象（如果函数被 call() 和 apply() 执行和调用时）。</p>
+<p>正因为它是如此容易地被搞错，请限制它的使用场景：</p>
+<ul>
+<li>在构造函数中</li>
+<li>在对象的方法中（包括由此创建出的闭包内）</li>
+</ul>
+<h2 id="首选函数式风格"><a href="#首选函数式风格" class="headerlink" title="首选函数式风格"></a>首选函数式风格</h2><p>函数式编程让你可以简化代码并缩减维护成本，因为它容易复用，又适当地解耦和更少的依赖。</p>
+<p>接下来的例子中，在一组数字求和的同一问题上，比较了两种解决方案。第一个例子是经典的程序处理，而第二个例子则是采用了函数式编程和 ECMA Script 5.1 的数组方法。</p>
+<p>例外：往往在重代码性能轻代码维护的情况之下，要选择最优性能的解决方案而非维护性高的方案（比如用简单的循环语句代替 forEach）。</p>
+<p>不推荐</p>
+<pre><code>(function(log){
+  &apos;use strict&apos;;
+
+  var arr = [10, 3, 7, 9, 100, 20],
+      sum = 0,
+      i;
+
+
+  for(i = 0; i &lt; arr.length; i++) {
+    sum += arr[i];
+  }
+
+  log(&apos;The sum of array &apos; + arr + &apos; is: &apos; + sum)
+
+}(window.console.log));
+</code></pre><p>推荐</p>
+<pre><code>(function(log){
+  &apos;use strict&apos;;
+
+  var arr = [10, 3, 7, 9, 100, 20];
+
+  var sum = arr.reduce(function(prevValue, currentValue) {
+    return prevValue + currentValue;
+  }, 0);
+
+  log(&apos;The sum of array &apos; + arr + &apos; is: &apos; + sum);
+
+}(window.console.log));
+</code></pre><p>另一个例子通过某一规则对一个数组进行过滤匹配来创建一个新的数组。</p>
+<p>不推荐</p>
+<pre><code>(function(log){
+  &apos;use strict&apos;;
+
+  var numbers = [11, 3, 7, 9, 100, 20, 14, 10],
+      numbersGreaterTen = [],
+      i;
+
+
+  for(i = 0; i &lt; numbers.length; i++) {
+    if(numbers[i] &gt; 10) {
+      numbersGreaterTen.push(numbers[i]);
+    }
+  }
+
+  log(&apos;From the list of numbers &apos; + numbers + &apos; only &apos; + numbersGreaterTen + &apos; are greater than ten&apos;);
+
+}(window.console.log));
+</code></pre><p>推荐</p>
+<pre><code>(function(log){
+  &apos;use strict&apos;;
+
+  var numbers = [11, 3, 7, 9, 100, 20, 14, 10];
+
+  var numbersGreaterTen = numbers.filter(function(element) {
+    return element &gt; 10;
+  });
+
+  log(&apos;From the list of numbers &apos; + numbers + &apos; only &apos; + numbersGreaterTen + &apos; are greater than ten&apos;);
+
+}(window.console.log));
+</code></pre><h2 id="使用-ECMA-Script-5"><a href="#使用-ECMA-Script-5" class="headerlink" title="使用 ECMA Script 5"></a>使用 ECMA Script 5</h2><p>建议使用 ECMA Script 5 中新增的语法糖和函数。这将简化你的程序，并让你的代码更加灵活和可复用。</p>
+<h2 id="数组和对象的属性迭代"><a href="#数组和对象的属性迭代" class="headerlink" title="数组和对象的属性迭代"></a>数组和对象的属性迭代</h2><p>用 ECMA5 的迭代方法来迭代数组。使用 Array.forEach 或者如果你要在特殊场合下中断迭代，那就用 Array.every。</p>
+<pre><code>(function(log){
+  &apos;use strict&apos;;
+
+  // Iterate over an array and break at a certain condition
+  [1, 2, 3, 4, 5].every(function(element, index, arr) {
+    log(element + &apos; at index &apos; + index + &apos; in array &apos; + arr);
+
+    if(index !== 5) {
+      return true;
+    }
+  });
+
+  // Defining a simple javascript object
+  var obj = {
+    a: &apos;A&apos;,
+    b: &apos;B&apos;,
+    &apos;c-d-e&apos;: &apos;CDE&apos;
+  };
+
+  // Iterating over the object keys
+  Object.keys(obj).forEach(function(element, index, arr) {
+    log(&apos;Key &apos; + element + &apos; has value &apos; + obj[element]);
+  });
+
+}(window.console.log));
+</code></pre><h2 id="不要使用-switch"><a href="#不要使用-switch" class="headerlink" title="不要使用 switch"></a>不要使用 switch</h2><p>switch 在所有的编程语言中都是个非常错误的难以控制的语句，建议用 if else 来替换它。 </p>
+<h2 id="数组和对象字面量"><a href="#数组和对象字面量" class="headerlink" title="数组和对象字面量"></a>数组和对象字面量</h2><p>用数组和对象字面量来代替数组和对象构造器。数组构造器很容易让人在它的参数上犯错。</p>
+<p>不推荐</p>
+<pre><code>// Length is 3.
+var a1 = new Array(x1, x2, x3);
+
+// Length is 2.
+var a2 = new Array(x1, x2);
+
+// If x1 is a number and it is a natural number the length will be x1.
+// If x1 is a number but not a natural number this will throw an exception.
+// Otherwise the array will have one element with x1 as its value.
+var a3 = new Array(x1);
+
+// Length is 0.
+var a4 = new Array();
+</code></pre><p>正因如此，如果将代码传参从两个变为一个，那数组很有可能发生意料不到的长度变化。为避免此类怪异状况，请总是采用更多可读的数组字面量。</p>
+<p>推荐   </p>
+<pre><code>var a = [x1, x2, x3];
+var a2 = [x1, x2];
+var a3 = [x1];
+var a4 = [];
+</code></pre><p>对象构造器不会有类似的问题，但是为了可读性和统一性，我们应该使用对象字面量。</p>
+<p>不推荐</p>
+<pre><code>var o = new Object();
+
+var o2 = new Object();
+o2.a = 0;
+o2.b = 1;
+o2.c = 2;
+o2[&apos;strange key&apos;] = 3;
+</code></pre><p>应该写成这样：</p>
+<p>推荐   </p>
+<pre><code>var o = {};
+
+var o2 = {
+    a: 0,
+    b: 1,
+    c: 2,
+    &apos;strange key&apos;: 3
+};
+</code></pre><h2 id="修改内建对象的原型链"><a href="#修改内建对象的原型链" class="headerlink" title="修改内建对象的原型链"></a>修改内建对象的原型链</h2><p>修改内建的诸如 Object.prototype 和 Array.prototype 是被严厉禁止的。修改其它的内建对象比如 Function.prototype，虽危害没那么大，但始终还是会导致在开发过程中难以 debug 的问题，应当也要避免。</p>
+<h2 id="自定义-toString-方法"><a href="#自定义-toString-方法" class="headerlink" title="自定义 toString() 方法"></a>自定义 toString() 方法</h2><p>你可以通过自定义 toString() 来控制对象字符串化。这很好，但你必须保证你的方法总是成功并不会有其它副作用。如果你的方法达不到这样的标准，那将会引发严重的问题。如果 toString() 调用了一个方法，这个方法做了一个断言[^3] ，当断言失败，它可能会输出它所在对象的名称，当然对象也需要调用 toString()。</p>
+<h2 id="圆括号"><a href="#圆括号" class="headerlink" title="圆括号"></a>圆括号</h2><p>一般在语法和语义上真正需要时才谨慎地使用圆括号。不要用在一元操作符上，例如 delete, typeof 和 void，或在关键字之后，例如 return, throw, case, new 等。</p>
+<h2 id="字符串"><a href="#字符串" class="headerlink" title="字符串"></a>字符串</h2><p>统一使用单引号(‘)，不使用双引号(“)。这在创建 HTML 字符串非常有好处：</p>
+<pre><code>var msg = &apos;This is some HTML &lt;div class=&quot;makes-sense&quot;&gt;&lt;/div&gt;&apos;;
+</code></pre><h2 id="三元条件判断（if-的快捷方法）"><a href="#三元条件判断（if-的快捷方法）" class="headerlink" title="三元条件判断（if 的快捷方法）"></a>三元条件判断（if 的快捷方法）</h2><p>用三元操作符分配或返回语句。在比较简单的情况下使用，避免在复杂的情况下使用。没人愿意用 10 行三元操作符把自己的脑子绕晕。</p>
+<p>不推荐</p>
+<pre><code>if(x === 10) {
+  return &apos;valid&apos;;
+} else {
+  return &apos;invalid&apos;;
+}
+</code></pre><p>推荐</p>
+<pre><code>return x === 10 ? &apos;valid&apos; : &apos;invalid&apos;;
+</code></pre><p>[^2]:中缀符，指的是像 x + y 中的 +。</p>
+<p>[^3]:断言一般指程序员在测试测序时的假设，一般是一些布尔表达式，当返回是 true 时，断言为真，代码运行会继续进行；如果条件判断为 false，代码运行停止，你的应用被终止。</p>
+]]></content>
+      
+        <categories>
+            
+            <category> 前端 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> JavaScript </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[我的前端之路]]></title>
+      <url>/2017/02/21/2017-2-21/</url>
+      <content type="html"><![CDATA[<h2 id="起源"><a href="#起源" class="headerlink" title="起源"></a>起源</h2><p>大家好，我是一个切图仔，现在在一家普通的公司做着普通的切图工作。现在是晚上10点钟，我正喝着香飘飘奶茶，在网易云音乐上听着武林外传电视剧。我的思绪随着故事里的对话飘到了很久以前：那时候我还在上初中，因为学校那边租的房子没有电视，为了我在租房那边有东西可以消遣，于是我在暑假的时候把mp3放在电视的播音口上，当武林外传开播，我就赶紧按下开始录音，当广告开始，我又马上从沙发上跳起来把录音关掉。。。结果到”验货”的时候发现好多录音都是杂音！气死我也。。。好像跑题了，本文的主题是我的职业之路，言归正传。。。</p>
+<p>提问：我是如何走上前端这条不归路的？<br>回答：故事要追溯到2015年。。。</p>
+<a id="more"></a>
+<p>那时候我读大三，作为一名标准的死宅看动漫打游戏，偶尔弹弹琴文艺一下。时值大三结束之际，有先见之明的同志们已经筹备着即将到来的秋招。那时候的我用一个字形容就是”迷”：明明没有任何一家企业给我offer却有一种谜一样的淡定。。。</p>
+<p><img src="/2017/02/21/2017-2-21/dog.jpg" alt="淡定狗狗"></p>
+<p>说心里不慌是不可能的，我一直觉得大学最重要的是确定自己要做什么，能为之多做一点准备更好。于是我在大三升大四的暑假选择留校在实验室。刚好那时候上的《web技术基础》这门课要交期末作业了，也就是用书本中尽量多的内容写一张网页，内容不限。于是我就照着书抄标签：能用的标签全部用上，最后一张应该被称为”html标签识别教学案例”的页面就这么诞生了。写完第一张页面，我心中不由得升起一股成就感(我也不知这成就感从何而来，毫无技术性可言的一张页面花了我一下午的时间)，更重要的是，在那段迷茫的时期我感觉有事情可做了：写页面！于是我认识了”前端”这个词，认识了”极客学院”、”慕课网”这些在线学习平台。我还心血来潮，买了一本当时不适合我的书，这本书我到现在还在看：《JavaScript高级程序设计》(第三版)<br>。拿到书的那天我煞有介事的带到学校的实验室看了一下午带一个晚上。可以很明白的说，那天我就看懂一句话：</p>
+<blockquote>
+<p>本书不适合没有计算机基础知识的初学者，也不适合只想为网站添加简单交互功能的读者。 <a href="原文出自《JavaScript高级程序设计》(第三版)。">^1</a> </p>
+</blockquote>
+<p>就算是这样，但是我拿着书看就有种谜一样的充实感。<br>这么跟着慕课网的老师们边学边做了一个暑假以后，大四上学期我开始找实习。终于在15年的10月份找到一家初创业公司内的实习工作，岗位是web前端实习生。</p>
+<h2 id="工作与收获"><a href="#工作与收获" class="headerlink" title="工作与收获"></a>工作与收获</h2><p>由于公司主要做海外的业务，市场重心放在第三世界国家，所以我的很多工作就是”翻译”：把网站上的文本内容换成其他国家语言，趁此机会了解这样的功能是怎么实现的。现在看来就是一个很简单的工作:将页面上的文本翻译成各种国家的语言用json格式保存起来，以页面上的切换选项作为入口选择不同的语言跳转到当前页面并加上”?lan=xx”的后缀，在页面加载时分析url的fragment部分并根据解析出的值来加载不同的语言。当时我可是研究了很久才弄明白。在公司里，如果没有事情做，我就找技术论坛和社区看文章。那时候也为隔壁的移动端部门做了几张app宣传页面，借此机会对移动端手势事件做了一些了解，知道了移动端点击事件延迟300ms的原理，知道了rem单位可以用来做响应式布局。回想那段实习的日子可真是苦啊，尤其是一月底那段时间，早上6点半的时候就起来，天刚刚亮的时候我就已经到了轻轨站。一路上是又上天（轻轨）又下海（过江隧道），还要走40多分钟的路，最后还只能踩着点到公司。现在想一想，当时我是怎么熬过来的，估计只有当时的我才知道吧。</p>
+<p>毕业以后，我又找了一份注重于页面的工作（也就是现在的工作）。工资不高，但是有一个厉害的老大。抱着向前辈多学习的想法，我开始了我的页面工程师的生涯。</p>
+<p>工作的内容就是页面重构：按照视觉稿的要求写新的页面或者修改旧的页面。在这里我接触了新的工具：gulp和git，以及新的语言：jade+sass；知道了ui组件的模块化是怎么回事：将页面按照页头、页脚、侧边栏等板块拆分出一个个组件，分别对组件进行管理与维护。在读懂了公司的gulpfile.js之后，我在自己的电脑上也配置了一套页面重构的环境，学会了npm包管理工具的配置方法和gulp自动化构建工具的配置技巧。</p>
+<p>有的时候我也会写用户交互用的js，曾经有一位同事跟我说了代码编写要符合规范，因为我的代码让人一看就不想看下去，很乱。于是我开始注意css与js编写的规范，在查阅了大量的资料后，我渐渐养成了干净、整洁的编码习惯。</p>
+<p>由于公司内的功能交互是依赖于jQuery库的，我有时会和同事一起解决交互功能的问题。这个时候我又发现了代码的质量影响到页面的性能。由此我明白了事件委托原理，函数防抖与节流原理，事件队列原理。在应用这些方法的时候，我感觉自己的代码水平又提高了一层。</p>
+<p>在这家公司里我养成了记笔记的习惯：发现有好的文章，我就记下链接保存在我的笔记中。这些笔记到现在我都认为有保存下来的价值。</p>
+<p>在这家公司我还使用es6+react过了一把瘾：公司里要求做一个文字冒险游戏主题编辑器，老大将架子搭好以后就丢给了我，由我解决后续的需求。那一个月里面我又重新开始学es6规范的js，为此我买了第三本书：阮一峰老师的《ES6标准入门》(第二版)。由于对react框架不熟，对新的语法也不熟，我写每一段代码都很艰难。至今都没有把握说懂了react框架或是es6语法。</p>
+<h2 id="2017"><a href="#2017" class="headerlink" title="2017"></a>2017</h2><p>今年是我正式踏入社会的第二年。我坚信保持学习，提升个人价值是我近两年的第一目标。所以我对自己今年的期望，就是比去年获取有效知识的效率更高，解决bug的速度更快，做一个高效率的开发者。</p>
+]]></content>
+      
+        <categories>
+            
+            <category> 人生 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> 随笔 </tag>
+            
+            <tag> 职业 </tag>
+            
+        </tags>
+        
+    </entry>
+    
+  
+  
+    
+    <entry>
+      <title></title>
+      <url>/404.html</url>
+      <content type="html"><![CDATA[<!DOCTYPE HTML>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8;">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="robots" content="all">
+  <meta name="robots" content="index,follow">
+</head>
+<body>
+
+<script type="text/javascript" src="http://www.qq.com/404/search_children.js" charset="utf-8" homepageurl="index.html" homepagename="回到我的主页"></script>
+
+</body>
+</html>]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[categories]]></title>
+      <url>/categories/index.html</url>
+      <content type="html"></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[关于我]]></title>
+      <url>/about/index.html</url>
+      <content type="html"><![CDATA[<blockquote>
+<p>待业中，具体事宜请来人来函以及来而无往非礼也之洽谈。。。</p>
+</blockquote>
+<hr>
+<h2 id="个人信息"><a href="#个人信息" class="headerlink" title="个人信息"></a>个人信息</h2><blockquote>
+<p>姓名：熊煜峰<br>生日：1995.01.25<br>手机：13667217029<br>邮箱：547719886@qq.com<br>个人博客：<a href="http://miller547719886.github.io" target="_blank" rel="noopener">https://miller547719886.github.io</a><br>SF社区：<a href="http://segmentfault.com/u/miiier" target="_blank" rel="noopener">https://segmentfault.com/u/miiier</a><br>毕业院校：江汉大学-数学与计算机科学学院-网络工程</p>
+</blockquote>
+<hr>
+<h2 id="专业技能"><a href="#专业技能" class="headerlink" title="专业技能"></a>专业技能</h2><p>掌握工具：PhotoShop，git bash，VirtualBox，gulp，bootstrap，jQuery，webpack<br>掌握语言：sass，jade，javascript<br>个人技能：</p>
+<ol>
+<li>一年以上前端开发经验</li>
+<li>熟练使用gulp+jade+sass+git+bootstrap进行页面重构                     </li>
+<li>掌握jQuery的高性能使用技巧并配合后台接口完成用户交互</li>
+<li>手动搭建gulp自动化工作流并优化</li>
+<li>对页面ui元素的模块化和组件化处理有深刻理解与实践</li>
+</ol>
+<hr>
+<h2 id="项目经验"><a href="#项目经验" class="headerlink" title="项目经验"></a>项目经验</h2><h3 id="The-HotGames"><a href="#The-HotGames" class="headerlink" title="The HotGames"></a>The HotGames</h3><p>项目网址：<a href="http://dahao.de" target="_blank" rel="noopener">http://thehotgames.com/cn</a><br>项目描述：The HotGames是一个在在线游戏网站，面向全世界用户，提供多国家语言切换。<br>我的职责：</p>
+<ol>
+<li>维护已有页面的样式问题及新页面的重构；</li>
+<li>编写多语言的切换功能。</li>
+</ol>
+<h3 id="大好网站"><a href="#大好网站" class="headerlink" title="大好网站"></a>大好网站</h3><p>开发工具：jade+sass+git+gulp<br>项目网址：<a href="http://dahao.de" target="_blank" rel="noopener">http://dahao.de</a><br>项目描述：大好网站是一个文字冒险游戏分享平台，用户可以体验、创作文字冒险游戏。项目前端模        块使用 gulp 进行自动化构建，jade 模板引擎实现页面结构模块化管理，sass  预编译        样式实现页面样式模块化管理。项目使用 git  进行版本库管理。<br>我的职责：</p>
+<ol>
+<li>参与页面原型讨论并独立完成页面重构，实现页面交互效果和动画效果；</li>
+<li>根据模块化思维编写并维护ui组件；</li>
+<li>参与开发网站内部工具–主题编辑器：使用react+es6+webpack开发游戏操作界面编辑工具。</li>
+</ol>
+<h3 id="微信有声小说"><a href="#微信有声小说" class="headerlink" title="微信有声小说"></a>微信有声小说</h3><p>开发工具：jade+sass+git+gulp+javascript<br>作品展示：关注微信公众号 “男神读小说”<br>项目描述：微信公众号”男神读小说”是面向女性读者的公众号，提供有声小说阅读服务。项目前端模块使用    bootstrap+jquery+jade+sass+gulp 实现页面界面与交互功能。<br>我的职责：</p>
+<ol>
+<li>独立搭建 node+gulp+jade+sass  进行页面开发的环境</li>
+<li>根据视觉稿实现项目中所有页面的页面重构，并针对微信内置浏览器做兼容</li>
+<li>配合后台提供的接口进行数据展示并实现小说继续阅读、自动支付等逻辑。</li>
+</ol>
+<h3 id="仿微信在线聊天室"><a href="#仿微信在线聊天室" class="headerlink" title="仿微信在线聊天室"></a>仿微信在线聊天室</h3><p>开发工具：html+css+javascript<br>作品展示：<a href="http://rufer.site/huobi/">http://rufer.site/huobi/</a><br>作品描述：仿照微信界面风格，为朋友的在线聊天室创作的页面模板。(在线聊天室：<br><a href="http://www.kattexu.com/" target="_blank" rel="noopener">http://www.kattexu.com/</a>)</p>
+<h3 id="电商网站页面重构库"><a href="#电商网站页面重构库" class="headerlink" title="电商网站页面重构库"></a>电商网站页面重构库</h3><p>开发工具：jade+sass+git+gulp+javascript<br>作品展示：<a href="http://rufer.site/kopi6.com/">http://rufer.site/kopi6.com/</a><br>作品描述：个人仿照日本电商网站完成的前端页面重构库<br>我的职责：</p>
+<ol>
+<li>从零开始搭建的 gulp+sass+jade 的页面重构库，并引用部分样式库辅助进行浏览器兼容。</li>
+<li>根据模块化思维编写并维护ui组件；</li>
+<li>根据项目需要编写用户交互效果并封装为插件以便重用。</li>
+</ol>
+<h2 id="自我评价"><a href="#自我评价" class="headerlink" title="自我评价"></a>自我评价</h2><p>热爱编程，热爱研究新事物，为人乐观积极，乐于与他人沟通并解决问题，时刻保持提升自我。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[commonweal]]></title>
+      <url>/commonweal/index.html</url>
+      <content type="html"></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[tags]]></title>
+      <url>/tags/index.html</url>
+      <content type="html"></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[sitemap]]></title>
+      <url>/sitemap/index.html</url>
+      <content type="html"></content>
+    </entry>
+    
+  
+</search>
