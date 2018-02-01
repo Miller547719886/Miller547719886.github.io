@@ -6,9 +6,9 @@
 # 标题
 title: Rufer's Blog
 # 副标题
-subtitle: 代码改变世界
+subtitle: Do your best.
 # 网站描述
-description: Rufer's blog shares coding experiences and understanding of life.
+description: I want something just like this.
 # 作者昵称
 author: Rufer
 # 网站语言，默认英语，设置简体汉语
@@ -120,13 +120,14 @@ pagination_dir: page
 # 配置RSS
 feed: 
   # feed 类型 (atom/rss2)
-  type: atom   
+  type: atom
   # rss 路径
-  path: atom.xml  
+  path: atom.xml
   # 在 rss 中最多生成的文章数(0显示所有)
   limit: 0
 
-
+# 头像
+avatar: https://avatars3.githubusercontent.com/u/16618956?s=460&v=4
 
 # 自定义站点内容搜索
 # 需要先安装插件：
