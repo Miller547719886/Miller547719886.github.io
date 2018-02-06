@@ -370,7 +370,7 @@
 <h2 id="js中的-运算符"><a href="#js中的-运算符" class="headerlink" title="js中的+运算符"></a>js中的+运算符</h2><p>在js中，由于其隐式转换的特性随时有可能发生，经常会出现奇怪的现象，比如下面的语句：</p>
 <figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[] + []</span><br><span class="line"></span><br><span class="line"><span class="string">""</span> <span class="comment">// 返回结果</span></span><br></pre></td></tr></table></figure>
 <p>js中提供不同严格程度的类型检查，比如说<code>use strict</code>（严格模式），或者是不严格相等与严格相等（==/===）。不严格相等的相等判断规则可以列一长条出来，就算是看起来完全不同的两种值都可能被判断为相等，所以其严谨程度经常为人所诟病。就拿上面的例子来分析，看<code>+</code>是如何工作的。</p>
-<h3 id="原始类型转换表"><a href="#原始类型转换表" class="headerlink" title="原始类型转换表"></a>原始类型转换表</h3><table>
+<h2 id="原始类型转换表"><a href="#原始类型转换表" class="headerlink" title="原始类型转换表"></a>原始类型转换表</h2><table>
 <thead>
 <tr>
 <th>原始值</th>
@@ -510,7 +510,7 @@
 </table>
 <p>上表陈列了js中的原始值转换为数字、字符串、布尔类型后对应的结果，可供查阅。</p>
 <p>可以见到上面的转换内容没有覆盖所有的情况，还提出了一个<strong>原始值</strong>的概念。什么是原始值？</p>
-<h3 id="原始值与toPrimiitive方法"><a href="#原始值与toPrimiitive方法" class="headerlink" title="原始值与toPrimiitive方法"></a>原始值与toPrimiitive方法</h3><p>这里搬运一段w3school的原句：</p>
+<h2 id="原始值与toPrimiitive方法"><a href="#原始值与toPrimiitive方法" class="headerlink" title="原始值与toPrimiitive方法"></a>原始值与toPrimiitive方法</h2><p>这里搬运一段w3school的原句：</p>
 <blockquote>
 <p>原始值:<br>  存储在栈（stack）中的简单数据段，也就是说，它们的值直接存储在变量访问的位置。<br>  引用值:<br>  存储在堆（heap）中的对象，也就是说，存储在变量处的值是一个指针（point），指向存储对象的内存处。<br>  ECMAScript 有 5 种原始类型（primitive type），即<code>Undefined, Null, Boolean, Number, String</code>。ECMA-262 把术语类型（type）定义为值的一个集合，每种原始类型定义了它包含的值的范围及其字面量表示形式。</p>
 </blockquote>
