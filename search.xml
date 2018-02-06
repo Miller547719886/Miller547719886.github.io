@@ -9,6 +9,7 @@
 <h2 id="js中的-运算符"><a href="#js中的-运算符" class="headerlink" title="js中的+运算符"></a>js中的+运算符</h2><p>在js中，由于其隐式转换的特性随时有可能发生，经常会出现奇怪的现象，比如下面的语句：</p>
 <figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[] + []</span><br><span class="line"></span><br><span class="line"><span class="string">""</span> <span class="comment">// 返回结果</span></span><br></pre></td></tr></table></figure>
 <p>js中提供不同严格程度的类型检查，比如说<code>use strict</code>（严格模式），或者是不严格相等与严格相等（==/===）。不严格相等的相等判断规则可以列一长条出来，就算是看起来完全不同的两种值都可能被判断为相等，所以其严谨程度经常为人所诟病。就拿上面的例子来分析，看<code>+</code>是如何工作的。</p>
+<a id="more"></a>
 <h2 id="原始类型转换表"><a href="#原始类型转换表" class="headerlink" title="原始类型转换表"></a>原始类型转换表</h2><table>
 <thead>
 <tr>
