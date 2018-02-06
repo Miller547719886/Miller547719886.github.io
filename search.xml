@@ -3,6 +3,281 @@
   
     
     <entry>
+      <title><![CDATA[javascript中隐式转换]]></title>
+      <url>/2018/02/06/2018-2-6/</url>
+      <content type="html"><![CDATA[<h2 id="javascript是弱类型语言"><a href="#javascript是弱类型语言" class="headerlink" title="javascript是弱类型语言"></a>javascript是弱类型语言</h2><p>之前记录过一篇文章区分了高级语言可以按照类型检查的严格程度分为强/弱类型语言，按照类型检查的时间点分为静态/动态类型语言。按照上篇文章所述，javascript是弱类型、动态检查的语言。这种语言的灵活性很高（不同类型的值可以做运算），但是也会更危险。如果对操作符的运算规则不熟悉，很可能造成自己意想不到的结果，从而导致对bug无从下手。</p>
+<h2 id="js中的-运算符"><a href="#js中的-运算符" class="headerlink" title="js中的+运算符"></a>js中的+运算符</h2><p>在js中，由于其隐式转换的特性随时有可能发生，经常会出现奇怪的现象，比如下面的语句：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[] + []</span><br><span class="line"></span><br><span class="line"><span class="string">""</span> <span class="comment">// 返回结果</span></span><br></pre></td></tr></table></figure>
+<p>js中提供不同严格程度的类型检查，比如说<code>use strict</code>（严格模式），或者是不严格相等与严格相等（==/===）。不严格相等的相等判断规则可以列一长条出来，就算是看起来完全不同的两种值都可能被判断为相等，所以其严谨程度经常为人所诟病。就拿上面的例子来分析，看<code>+</code>是如何工作的。</p>
+<h3 id="原始类型转换表"><a href="#原始类型转换表" class="headerlink" title="原始类型转换表"></a>原始类型转换表</h3><table>
+<thead>
+<tr>
+<th>原始值</th>
+<th>对应数值类型</th>
+<th>对应字符串类型</th>
+<th>对应boolean类型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>false</td>
+<td>0</td>
+<td>“false”</td>
+<td>false</td>
+</tr>
+<tr>
+<td>true</td>
+<td>1</td>
+<td>“true”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>0</td>
+<td>0</td>
+<td>“0”</td>
+<td>false</td>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+<td>“1”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>“0”</td>
+<td>0</td>
+<td>“0”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>“1”</td>
+<td>1</td>
+<td>“1”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>NaN</td>
+<td>NaN</td>
+<td>“NaN”</td>
+<td>false</td>
+</tr>
+<tr>
+<td>Infinity</td>
+<td>Infinity</td>
+<td>“Infinity”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>-Infinity</td>
+<td>-Infinity</td>
+<td>“-Infinity”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>“”</td>
+<td>0</td>
+<td>“”</td>
+<td>false</td>
+</tr>
+<tr>
+<td>“20”</td>
+<td>20</td>
+<td>“20”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>“twenty”</td>
+<td>NaN</td>
+<td>“twenty”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>[]</td>
+<td>0</td>
+<td>“”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>[20]</td>
+<td>20</td>
+<td>“20”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>[10, 20]</td>
+<td>NaN</td>
+<td>“10,20”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>[“twenty”]</td>
+<td>NaN</td>
+<td>“twenty”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>[“ten”, “twenty”]</td>
+<td>NaN</td>
+<td>“ten, twenty”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>function(){}</td>
+<td>NaN</td>
+<td>“function(){}”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>{}</td>
+<td>NaN</td>
+<td>“[object Object]”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>null</td>
+<td>0</td>
+<td>“null”</td>
+<td>false</td>
+</tr>
+<tr>
+<td>undefined</td>
+<td>NaN</td>
+<td>“undefined”</td>
+<td>false</td>
+</tr>
+</tbody>
+</table>
+<p>上表陈列了js中的原始值转换为数字、字符串、布尔类型后对应的结果，可供查阅。</p>
+<p>可以见到上面的转换内容没有覆盖所有的情况，还提出了一个<strong>原始值</strong>的概念。什么是原始值？</p>
+<h3 id="原始值与toPrimiitive方法"><a href="#原始值与toPrimiitive方法" class="headerlink" title="原始值与toPrimiitive方法"></a>原始值与toPrimiitive方法</h3><p>这里搬运一段w3school的原句：</p>
+<blockquote>
+<p>原始值:<br>  存储在栈（stack）中的简单数据段，也就是说，它们的值直接存储在变量访问的位置。<br>  引用值:<br>  存储在堆（heap）中的对象，也就是说，存储在变量处的值是一个指针（point），指向存储对象的内存处。<br>  ECMAScript 有 5 种原始类型（primitive type），即<code>Undefined, Null, Boolean, Number, String</code>。ECMA-262 把术语类型（type）定义为值的一个集合，每种原始类型定义了它包含的值的范围及其字面量表示形式。</p>
+</blockquote>
+<p>可以见得，原始类型值就是俗称的基本类型值，其传递类型为值传递；引用类型值就是俗称的复杂类型值，其传递类型为引用传递。那引用值如何转换成原始值？</p>
+<p>在js引擎中有一个内置方法：<code>toPrimitive(obj, jsType)</code>用于将复杂类型值转换为原始值，让我们解读一下其工作原理。</p>
+<p>ToPrimitive运算符接受一个值，和一个可选的<strong>期望类型</strong>作参数(可选值String与Number，默认值为无。)。ToPrimitive 运算符把其值参数转换为非对象类型。如果对象有能力被转换为不止一种原始值，可以使用可选的<strong>期望类型</strong>来暗示那个类型，并返回该对象的默认值。对象的默认值由把期望类型传入作为参数调用对象的内部方法[[DefaultValue]]得到。这个[[DefaultValue]]又是啥？不慌，往下看。</p>
+<h3 id="DefaultValue-hint"><a href="#DefaultValue-hint" class="headerlink" title="[[DefaultValue]] (hint)"></a>[[DefaultValue]] (hint)</h3><p>关于[[DefaultValue]]的详细规则请看<a href="http://yanhaijing.com/es5/#null" target="_blank" rel="noopener">w3c规范</a>中的8.12.8节，下面是我的解读：</p>
+<p>当用字符串 hint 调用 O 的 [[DefaultValue]] 内部方法（即toPrimitive的期望类型为String），采用以下步骤：</p>
+<ol>
+<li>否则,调用这个对象的toString()方法.如果toString()方法的返回值是一个原始值,则返回这个原始值.</li>
+<li>调用该对象的valueOf()方法.如果valueOf()方法的返回值是一个原始值,则返回这个原始值.</li>
+<li>否则,抛出TypeError异常.</li>
+</ol>
+<p>当用数字 hint 调用 O 的 [[DefaultValue]] 内部方法（即toPrimitive的期望类型为Number），采用以下步骤：</p>
+<ol>
+<li>调用该对象的valueOf()方法.如果valueOf()方法的返回值是一个原始值,则返回这个原始值.</li>
+<li>否则,调用这个对象的toString()方法.如果toString()方法的返回值是一个原始值,则返回这个原始值.</li>
+<li>否则,抛出TypeError异常.</li>
+</ol>
+<blockquote>
+<p>如果没有指定期望类型,则期望类型的值会按照这样的规则来自动设置:Date类型的对象会被设置为String（即先执行toString后执行valueOf）,其它类型的值会被设置为Number（即先执行valueOf后执行toString）。经试验证明，toPrimitive方法内置于js引擎中，不会有人去改写这个期望类型参数，所以基本就按照这个规则来判断就是了。</p>
+</blockquote>
+<p>下面列出一下常见的复杂类型值的valueOf与toString结果：</p>
+<table>
+<thead>
+<tr>
+<th>原始值</th>
+<th>valueOf</th>
+<th>toString</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[]</td>
+<td>0</td>
+<td>“false”</td>
+<td></td>
+</tr>
+<tr>
+<td>[1]</td>
+<td>[]</td>
+<td>“”</td>
+<td></td>
+</tr>
+<tr>
+<td>[1]</td>
+<td>[1]</td>
+<td>“1”</td>
+<td></td>
+</tr>
+<tr>
+<td>[1, 2]</td>
+<td>[1, 2]</td>
+<td>“1,2”</td>
+<td></td>
+</tr>
+<tr>
+<td>[{name: ‘bob’}]</td>
+<td>[{name: ‘bob’}]</td>
+<td>“[object Object]”</td>
+<td></td>
+</tr>
+<tr>
+<td>{}</td>
+<td>{}</td>
+<td>“[object Object]”</td>
+<td></td>
+</tr>
+<tr>
+<td>{name: ‘bob’}</td>
+<td>{name: ‘bob’}</td>
+<td>“[object Object]”</td>
+<td></td>
+</tr>
+<tr>
+<td>{name: []}</td>
+<td>{name: []}</td>
+<td>“[object Object]”</td>
+<td></td>
+</tr>
+<tr>
+<td>function () {}</td>
+<td>function () {}</td>
+<td>“function () {}”</td>
+<td></td>
+</tr>
+<tr>
+<td>new Date()</td>
+<td>1517903643452</td>
+<td>“Tue Feb 06 2018 15:54:34 GMT+0800 (中国标准时间)”</td>
+<td></td>
+</tr>
+<tr>
+<td>Math</td>
+<td>Math</td>
+<td>“[object Math]”</td>
+<td></td>
+</tr>
+<tr>
+<td>RegExp</td>
+<td>ƒ RegExp() { [native code] }</td>
+<td>“function RegExp() { [native code] }”</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>在转化为原始值之后，再按照上表所示规则转换为指定类型的的原始值（字符串或数字）</p>
+<p>写个demo验证一下：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> obj1 = &#123;</span><br><span class="line">    valueOf: <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">"valueOf"</span>);</span><br><span class="line">        <span class="keyword">return</span> &#123;&#125;; <span class="comment">// 没有返回原始值</span></span><br><span class="line">    &#125;,</span><br><span class="line">    toString: <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">"toString"</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="string">'1'</span>; <span class="comment">// 没有返回原始值</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">var</span> obj2 = &#123;</span><br><span class="line">    valueOf: <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">"valueOf"</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">2</span>; <span class="comment">// 没有返回原始值</span></span><br><span class="line">    &#125;,</span><br><span class="line">    toString: <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">"toString"</span>);</span><br><span class="line">        <span class="keyword">return</span> &#123;&#125;; <span class="comment">// 没有返回原始值</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">obj1+obj2</span><br><span class="line"></span><br><span class="line"><span class="comment">// 结果</span></span><br><span class="line">valueOf</span><br><span class="line">toString</span><br><span class="line">valueOf</span><br><span class="line"><span class="string">"12"</span></span><br></pre></td></tr></table></figure>
+<p>可以见得，<code>v1 + v2</code>这一语句可以用如下伪代码实现：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> prim1 = ToPrimitive(v1)</span><br><span class="line"><span class="keyword">var</span> prim2 = ToPrimitive(v2)</span><br><span class="line"><span class="keyword">var</span> res</span><br><span class="line"><span class="comment">// PreferredType被省略,因此Date类型的值采用String,其他类型的值采用Number.</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (isNumber(prim1) || isNumber(prim1)) &#123; <span class="comment">// 如果其中一个值为String类型</span></span><br><span class="line">  res = <span class="built_in">String</span>(prim1) + <span class="built_in">String</span>(prim1) <span class="comment">// 则两个值都转换为字符串相加</span></span><br><span class="line">&#125; <span class="keyword">else</span> &#123; <span class="comment">// 否则</span></span><br><span class="line">  res = <span class="built_in">Number</span>(prim1) + <span class="built_in">Number</span>(prim2) <span class="comment">// 则两个值都转换为数字相加</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> res</span><br></pre></td></tr></table></figure>
+<p>下面我们用几个例子验证一下：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="literal">true</span> + <span class="number">1</span> <span class="comment">// 两个值都不是字符串类型，结果为转换为数字相加，根据上面表中对应关系得到结果为1</span></span><br><span class="line"></span><br><span class="line"><span class="literal">undefined</span> + <span class="number">1</span> <span class="comment">// 两个值都不是字符串类型，结果为转换为数字相加，根据上面表中对应关系得到结果为NaN</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> obj = &#123;&#125;;</span><br><span class="line">obj + <span class="number">1</span> <span class="comment">// 执行ToPrimitive(obj)得到"[object Object]"为字符串，与1相加结果为字符串，所以为"[object Object]1"</span></span><br></pre></td></tr></table></figure>
+<h2 id="例外"><a href="#例外" class="headerlink" title="例外"></a>例外</h2><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#125; + <span class="number">1</span> <span class="comment">// 结果为1</span></span><br></pre></td></tr></table></figure>
+<p>造成这种情况的原因是整个输入被解析成了一个语句,如果一个语句是以左大括号开始的,则这对大括号会被解析成一个代码块。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="comment">// do nothing;</span></span><br><span class="line">&#125;;</span><br><span class="line">+<span class="number">1</span>; <span class="comment">// 这里的加号并不是代表加法的二元运算符,而是一个一元运算符,作用是将它后面的操作数转换成数字,和Number()函数完全一样</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 结果</span></span><br><span class="line"><span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>同样还有如下情况：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#125; + [] <span class="comment">// 结果为0</span></span><br></pre></td></tr></table></figure>
+<p>按照上面的逻辑，计算结果应为Number([])的结果。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">Number</span>([])</span><br><span class="line"><span class="built_in">Number</span>([].toString())  <span class="comment">// 因为[].valueOf()不是原始值</span></span><br><span class="line"><span class="built_in">Number</span>(<span class="string">""</span>)</span><br><span class="line"><span class="number">0</span></span><br></pre></td></tr></table></figure>
+<p>##参考文献</p>
+<p><a href="http://yanhaijing.com/es5/#null" target="_blank" rel="noopener">w3c规范镜像版</a><br><a href="https://segmentfault.com/a/1190000011007975" target="_blank" rel="noopener">JavaScript 运算符规则与隐式类型转换详解</a><br><a href="https://www.cnblogs.com/ziyunfei/archive/2012/09/15/2685885.html" target="_blank" rel="noopener">JavaScript中,{}+{}等于多少?</a></p>
+]]></content>
+      
+        
+    </entry>
+    
+    <entry>
       <title><![CDATA[强类型/弱类型/静态类型/动态类型语言初探]]></title>
       <url>/2018/01/27/2018-1-27/</url>
       <content type="html"><![CDATA[<h2 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h2><p><img src="/2018/01/27/2018-1-27/weak_or_strong.jpg" alt="weak_or_wtrong"></p>
@@ -54,7 +329,8 @@
 <blockquote>
 <p>在计算机编程中，编程语言经常被口头分类为语言的类型系统是强类型还是弱类型（松散类型）。这些术语没有一个精确的定义，但一般来说，强类型语言有更严格的输入规则，如果传递给函数的参数与期望的类型不匹配，则更可能产生错误或拒绝编译。另一方面，弱类型的语言具有更宽松的输入规则，并且可能产生不可预知的结果或者可能执行隐式类型转换。<a href="摘自wikipedia">^1</a></p>
 </blockquote>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>语言被分为强/弱类型语言，通常依据<strong>是否可以隐式转换</strong>进行区分；<br>而静态/动态类型语言通常依据类型检查这一过程在编译阶段实施（静态）还是在执行阶段实施（动态）；<br>另外，由于强类型语言一般需要在运行时运行一套类型检查系统，因此强类型语言的速度一般比弱类型要慢，动态类型也比静态类型慢，因此在上述所说的四种语言中执行的速度应该是 C &gt; Java &gt; JavaScript &gt; Python。但是强类型，静态类型的语言写起来往往是最安全的。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>语言被分为强/弱类型语言，通常依据<strong>是否可以隐式转换</strong>进行区分；<br>而静态/动态类型语言通常依据类型检查这一过程在编译阶段实施（静态）还是在执行阶段实施（动态）；</p>
+<p>另外，由于强类型语言一般需要在运行时运行一套类型检查系统，因此强类型语言的速度一般比弱类型要慢，动态类型也比静态类型慢。但是强类型，静态类型的语言写起来往往是最安全的。</p>
 ]]></content>
       
         
@@ -385,41 +661,6 @@ myfunc.call(func,&quot;var&quot;);
     </entry>
     
     <entry>
-      <title><![CDATA[css命名法-BEM命名法详解]]></title>
-      <url>/2017/03/01/2017-3-11/</url>
-      <content type="html"><![CDATA[<p>BEM的意思就是块（block）、元素（element）、修饰符（modifier）,是由Yandex团队提出的一种前端命名方法论。这种巧妙的命名方法让你的CSS类对其他开发者来说更加透明而且更有意义。BEM命名约定更加严格，而且包含更多的信息，它们用于一个团队开发一个耗时的大项目。</p>
-<p>命名约定的模式如下：</p>
-<pre><code>.block{}  
-.block__element{}  
-.block--modifier{}  
-</code></pre><ul>
-<li>.block 代表了更高级别的抽象或组件。</li>
-<li>.block__element 代表.block的后代，用于形成一个完整的.block的整体。</li>
-<li>.block–modifier代表.block的不同状态或不同版本。</li>
-</ul>
-<p>之所以使用两个连字符和下划线而不是一个，是为了让你自己的块可以用单个连字符来界定，如：</p>
-<pre><code>.site-search{} /* 块 */  
-.site-search__field{} /* 元素 */  
-.site-search--full{} /* 修饰符 */    
-</code></pre><a id="more"></a>
-]]></content>
-      
-        <categories>
-            
-            <category> 前端 </category>
-            
-        </categories>
-        
-        
-        <tags>
-            
-            <tag> css </tag>
-            
-        </tags>
-        
-    </entry>
-    
-    <entry>
       <title><![CDATA[前端代码规范-一般规范]]></title>
       <url>/2017/03/01/2017-3-10/</url>
       <content type="html"><![CDATA[<h2 id="文件-资源命名"><a href="#文件-资源命名" class="headerlink" title="文件/资源命名"></a>文件/资源命名</h2><p>在 web 项目中，所有的文件名应该都遵循同一命名约定。以可读性而言，减号（-）是用来分隔文件名的不二之选。同时它也是常见的 URL 分隔符（i.e. //example.com/blog/my-blog-entry or //s.example.com/images/big-black-background.jpg），所以理所当然的，减号应该也是用来分隔资源名称的好选择。</p>
@@ -492,6 +733,41 @@ my-file.min.css
         <tags>
             
             <tag> 代码规范 </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[css命名法-BEM命名法详解]]></title>
+      <url>/2017/03/01/2017-3-11/</url>
+      <content type="html"><![CDATA[<p>BEM的意思就是块（block）、元素（element）、修饰符（modifier）,是由Yandex团队提出的一种前端命名方法论。这种巧妙的命名方法让你的CSS类对其他开发者来说更加透明而且更有意义。BEM命名约定更加严格，而且包含更多的信息，它们用于一个团队开发一个耗时的大项目。</p>
+<p>命名约定的模式如下：</p>
+<pre><code>.block{}  
+.block__element{}  
+.block--modifier{}  
+</code></pre><ul>
+<li>.block 代表了更高级别的抽象或组件。</li>
+<li>.block__element 代表.block的后代，用于形成一个完整的.block的整体。</li>
+<li>.block–modifier代表.block的不同状态或不同版本。</li>
+</ul>
+<p>之所以使用两个连字符和下划线而不是一个，是为了让你自己的块可以用单个连字符来界定，如：</p>
+<pre><code>.site-search{} /* 块 */  
+.site-search__field{} /* 元素 */  
+.site-search--full{} /* 修饰符 */    
+</code></pre><a id="more"></a>
+]]></content>
+      
+        <categories>
+            
+            <category> 前端 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> css </tag>
             
         </tags>
         
@@ -2068,12 +2344,6 @@ var o2 = {
     </entry>
     
     <entry>
-      <title><![CDATA[categories]]></title>
-      <url>/categories/index.html</url>
-      <content type="html"></content>
-    </entry>
-    
-    <entry>
       <title><![CDATA[关于我]]></title>
       <url>/about/index.html</url>
       <content type="html"><![CDATA[<blockquote>
@@ -2124,6 +2394,12 @@ var o2 = {
     <entry>
       <title><![CDATA[commonweal]]></title>
       <url>/commonweal/index.html</url>
+      <content type="html"></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[categories]]></title>
+      <url>/categories/index.html</url>
       <content type="html"></content>
     </entry>
     

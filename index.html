@@ -81,16 +81,16 @@
 
 
 
-<meta name="description" content="I want something just like this.">
+<meta name="description" content="学好英文，多看文档。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Rufer&#39;s Blog">
 <meta property="og:url" content="http://rufer.site/index.html">
 <meta property="og:site_name" content="Rufer&#39;s Blog">
-<meta property="og:description" content="I want something just like this.">
+<meta property="og:description" content="学好英文，多看文档。">
 <meta property="og:locale" content="zh-Hans">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Rufer&#39;s Blog">
-<meta name="twitter:description" content="I want something just like this.">
+<meta name="twitter:description" content="学好英文，多看文档。">
 
 
 
@@ -270,6 +270,403 @@
           <div id="content" class="content">
             
   <section id="posts" class="posts-expand">
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://rufer.site/2018/02/06/2018-2-6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Rufer">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16618956?s=460&v=4">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Rufer's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/02/06/2018-2-6/" itemprop="url">javascript中隐式转换</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-02-06T10:57:57+08:00">
+                2018-02-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/02/06/2018-2-6/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/02/06/2018-2-6/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="javascript是弱类型语言"><a href="#javascript是弱类型语言" class="headerlink" title="javascript是弱类型语言"></a>javascript是弱类型语言</h2><p>之前记录过一篇文章区分了高级语言可以按照类型检查的严格程度分为强/弱类型语言，按照类型检查的时间点分为静态/动态类型语言。按照上篇文章所述，javascript是弱类型、动态检查的语言。这种语言的灵活性很高（不同类型的值可以做运算），但是也会更危险。如果对操作符的运算规则不熟悉，很可能造成自己意想不到的结果，从而导致对bug无从下手。</p>
+<h2 id="js中的-运算符"><a href="#js中的-运算符" class="headerlink" title="js中的+运算符"></a>js中的+运算符</h2><p>在js中，由于其隐式转换的特性随时有可能发生，经常会出现奇怪的现象，比如下面的语句：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[] + []</span><br><span class="line"></span><br><span class="line"><span class="string">""</span> <span class="comment">// 返回结果</span></span><br></pre></td></tr></table></figure>
+<p>js中提供不同严格程度的类型检查，比如说<code>use strict</code>（严格模式），或者是不严格相等与严格相等（==/===）。不严格相等的相等判断规则可以列一长条出来，就算是看起来完全不同的两种值都可能被判断为相等，所以其严谨程度经常为人所诟病。就拿上面的例子来分析，看<code>+</code>是如何工作的。</p>
+<h3 id="原始类型转换表"><a href="#原始类型转换表" class="headerlink" title="原始类型转换表"></a>原始类型转换表</h3><table>
+<thead>
+<tr>
+<th>原始值</th>
+<th>对应数值类型</th>
+<th>对应字符串类型</th>
+<th>对应boolean类型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>false</td>
+<td>0</td>
+<td>“false”</td>
+<td>false</td>
+</tr>
+<tr>
+<td>true</td>
+<td>1</td>
+<td>“true”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>0</td>
+<td>0</td>
+<td>“0”</td>
+<td>false</td>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+<td>“1”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>“0”</td>
+<td>0</td>
+<td>“0”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>“1”</td>
+<td>1</td>
+<td>“1”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>NaN</td>
+<td>NaN</td>
+<td>“NaN”</td>
+<td>false</td>
+</tr>
+<tr>
+<td>Infinity</td>
+<td>Infinity</td>
+<td>“Infinity”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>-Infinity</td>
+<td>-Infinity</td>
+<td>“-Infinity”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>“”</td>
+<td>0</td>
+<td>“”</td>
+<td>false</td>
+</tr>
+<tr>
+<td>“20”</td>
+<td>20</td>
+<td>“20”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>“twenty”</td>
+<td>NaN</td>
+<td>“twenty”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>[]</td>
+<td>0</td>
+<td>“”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>[20]</td>
+<td>20</td>
+<td>“20”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>[10, 20]</td>
+<td>NaN</td>
+<td>“10,20”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>[“twenty”]</td>
+<td>NaN</td>
+<td>“twenty”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>[“ten”, “twenty”]</td>
+<td>NaN</td>
+<td>“ten, twenty”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>function(){}</td>
+<td>NaN</td>
+<td>“function(){}”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>{}</td>
+<td>NaN</td>
+<td>“[object Object]”</td>
+<td>true</td>
+</tr>
+<tr>
+<td>null</td>
+<td>0</td>
+<td>“null”</td>
+<td>false</td>
+</tr>
+<tr>
+<td>undefined</td>
+<td>NaN</td>
+<td>“undefined”</td>
+<td>false</td>
+</tr>
+</tbody>
+</table>
+<p>上表陈列了js中的原始值转换为数字、字符串、布尔类型后对应的结果，可供查阅。</p>
+<p>可以见到上面的转换内容没有覆盖所有的情况，还提出了一个<strong>原始值</strong>的概念。什么是原始值？</p>
+<h3 id="原始值与toPrimiitive方法"><a href="#原始值与toPrimiitive方法" class="headerlink" title="原始值与toPrimiitive方法"></a>原始值与toPrimiitive方法</h3><p>这里搬运一段w3school的原句：</p>
+<blockquote>
+<p>原始值:<br>  存储在栈（stack）中的简单数据段，也就是说，它们的值直接存储在变量访问的位置。<br>  引用值:<br>  存储在堆（heap）中的对象，也就是说，存储在变量处的值是一个指针（point），指向存储对象的内存处。<br>  ECMAScript 有 5 种原始类型（primitive type），即<code>Undefined, Null, Boolean, Number, String</code>。ECMA-262 把术语类型（type）定义为值的一个集合，每种原始类型定义了它包含的值的范围及其字面量表示形式。</p>
+</blockquote>
+<p>可以见得，原始类型值就是俗称的基本类型值，其传递类型为值传递；引用类型值就是俗称的复杂类型值，其传递类型为引用传递。那引用值如何转换成原始值？</p>
+<p>在js引擎中有一个内置方法：<code>toPrimitive(obj, jsType)</code>用于将复杂类型值转换为原始值，让我们解读一下其工作原理。</p>
+<p>ToPrimitive运算符接受一个值，和一个可选的<strong>期望类型</strong>作参数(可选值String与Number，默认值为无。)。ToPrimitive 运算符把其值参数转换为非对象类型。如果对象有能力被转换为不止一种原始值，可以使用可选的<strong>期望类型</strong>来暗示那个类型，并返回该对象的默认值。对象的默认值由把期望类型传入作为参数调用对象的内部方法[[DefaultValue]]得到。这个[[DefaultValue]]又是啥？不慌，往下看。</p>
+<h3 id="DefaultValue-hint"><a href="#DefaultValue-hint" class="headerlink" title="[[DefaultValue]] (hint)"></a>[[DefaultValue]] (hint)</h3><p>关于[[DefaultValue]]的详细规则请看<a href="http://yanhaijing.com/es5/#null" target="_blank" rel="noopener">w3c规范</a>中的8.12.8节，下面是我的解读：</p>
+<p>当用字符串 hint 调用 O 的 [[DefaultValue]] 内部方法（即toPrimitive的期望类型为String），采用以下步骤：</p>
+<ol>
+<li>否则,调用这个对象的toString()方法.如果toString()方法的返回值是一个原始值,则返回这个原始值.</li>
+<li>调用该对象的valueOf()方法.如果valueOf()方法的返回值是一个原始值,则返回这个原始值.</li>
+<li>否则,抛出TypeError异常.</li>
+</ol>
+<p>当用数字 hint 调用 O 的 [[DefaultValue]] 内部方法（即toPrimitive的期望类型为Number），采用以下步骤：</p>
+<ol>
+<li>调用该对象的valueOf()方法.如果valueOf()方法的返回值是一个原始值,则返回这个原始值.</li>
+<li>否则,调用这个对象的toString()方法.如果toString()方法的返回值是一个原始值,则返回这个原始值.</li>
+<li>否则,抛出TypeError异常.</li>
+</ol>
+<blockquote>
+<p>如果没有指定期望类型,则期望类型的值会按照这样的规则来自动设置:Date类型的对象会被设置为String（即先执行toString后执行valueOf）,其它类型的值会被设置为Number（即先执行valueOf后执行toString）。经试验证明，toPrimitive方法内置于js引擎中，不会有人去改写这个期望类型参数，所以基本就按照这个规则来判断就是了。</p>
+</blockquote>
+<p>下面列出一下常见的复杂类型值的valueOf与toString结果：</p>
+<table>
+<thead>
+<tr>
+<th>原始值</th>
+<th>valueOf</th>
+<th>toString</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[]</td>
+<td>0</td>
+<td>“false”</td>
+<td></td>
+</tr>
+<tr>
+<td>[1]</td>
+<td>[]</td>
+<td>“”</td>
+<td></td>
+</tr>
+<tr>
+<td>[1]</td>
+<td>[1]</td>
+<td>“1”</td>
+<td></td>
+</tr>
+<tr>
+<td>[1, 2]</td>
+<td>[1, 2]</td>
+<td>“1,2”</td>
+<td></td>
+</tr>
+<tr>
+<td>[{name: ‘bob’}]</td>
+<td>[{name: ‘bob’}]</td>
+<td>“[object Object]”</td>
+<td></td>
+</tr>
+<tr>
+<td>{}</td>
+<td>{}</td>
+<td>“[object Object]”</td>
+<td></td>
+</tr>
+<tr>
+<td>{name: ‘bob’}</td>
+<td>{name: ‘bob’}</td>
+<td>“[object Object]”</td>
+<td></td>
+</tr>
+<tr>
+<td>{name: []}</td>
+<td>{name: []}</td>
+<td>“[object Object]”</td>
+<td></td>
+</tr>
+<tr>
+<td>function () {}</td>
+<td>function () {}</td>
+<td>“function () {}”</td>
+<td></td>
+</tr>
+<tr>
+<td>new Date()</td>
+<td>1517903643452</td>
+<td>“Tue Feb 06 2018 15:54:34 GMT+0800 (中国标准时间)”</td>
+<td></td>
+</tr>
+<tr>
+<td>Math</td>
+<td>Math</td>
+<td>“[object Math]”</td>
+<td></td>
+</tr>
+<tr>
+<td>RegExp</td>
+<td>ƒ RegExp() { [native code] }</td>
+<td>“function RegExp() { [native code] }”</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>在转化为原始值之后，再按照上表所示规则转换为指定类型的的原始值（字符串或数字）</p>
+<p>写个demo验证一下：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> obj1 = &#123;</span><br><span class="line">    valueOf: <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">"valueOf"</span>);</span><br><span class="line">        <span class="keyword">return</span> &#123;&#125;; <span class="comment">// 没有返回原始值</span></span><br><span class="line">    &#125;,</span><br><span class="line">    toString: <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">"toString"</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="string">'1'</span>; <span class="comment">// 没有返回原始值</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">var</span> obj2 = &#123;</span><br><span class="line">    valueOf: <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">"valueOf"</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">2</span>; <span class="comment">// 没有返回原始值</span></span><br><span class="line">    &#125;,</span><br><span class="line">    toString: <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">"toString"</span>);</span><br><span class="line">        <span class="keyword">return</span> &#123;&#125;; <span class="comment">// 没有返回原始值</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">obj1+obj2</span><br><span class="line"></span><br><span class="line"><span class="comment">// 结果</span></span><br><span class="line">valueOf</span><br><span class="line">toString</span><br><span class="line">valueOf</span><br><span class="line"><span class="string">"12"</span></span><br></pre></td></tr></table></figure>
+<p>可以见得，<code>v1 + v2</code>这一语句可以用如下伪代码实现：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> prim1 = ToPrimitive(v1)</span><br><span class="line"><span class="keyword">var</span> prim2 = ToPrimitive(v2)</span><br><span class="line"><span class="keyword">var</span> res</span><br><span class="line"><span class="comment">// PreferredType被省略,因此Date类型的值采用String,其他类型的值采用Number.</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (isNumber(prim1) || isNumber(prim1)) &#123; <span class="comment">// 如果其中一个值为String类型</span></span><br><span class="line">  res = <span class="built_in">String</span>(prim1) + <span class="built_in">String</span>(prim1) <span class="comment">// 则两个值都转换为字符串相加</span></span><br><span class="line">&#125; <span class="keyword">else</span> &#123; <span class="comment">// 否则</span></span><br><span class="line">  res = <span class="built_in">Number</span>(prim1) + <span class="built_in">Number</span>(prim2) <span class="comment">// 则两个值都转换为数字相加</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> res</span><br></pre></td></tr></table></figure>
+<p>下面我们用几个例子验证一下：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="literal">true</span> + <span class="number">1</span> <span class="comment">// 两个值都不是字符串类型，结果为转换为数字相加，根据上面表中对应关系得到结果为1</span></span><br><span class="line"></span><br><span class="line"><span class="literal">undefined</span> + <span class="number">1</span> <span class="comment">// 两个值都不是字符串类型，结果为转换为数字相加，根据上面表中对应关系得到结果为NaN</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> obj = &#123;&#125;;</span><br><span class="line">obj + <span class="number">1</span> <span class="comment">// 执行ToPrimitive(obj)得到"[object Object]"为字符串，与1相加结果为字符串，所以为"[object Object]1"</span></span><br></pre></td></tr></table></figure>
+<h2 id="例外"><a href="#例外" class="headerlink" title="例外"></a>例外</h2><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#125; + <span class="number">1</span> <span class="comment">// 结果为1</span></span><br></pre></td></tr></table></figure>
+<p>造成这种情况的原因是整个输入被解析成了一个语句,如果一个语句是以左大括号开始的,则这对大括号会被解析成一个代码块。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="comment">// do nothing;</span></span><br><span class="line">&#125;;</span><br><span class="line">+<span class="number">1</span>; <span class="comment">// 这里的加号并不是代表加法的二元运算符,而是一个一元运算符,作用是将它后面的操作数转换成数字,和Number()函数完全一样</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 结果</span></span><br><span class="line"><span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>同样还有如下情况：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#125; + [] <span class="comment">// 结果为0</span></span><br></pre></td></tr></table></figure>
+<p>按照上面的逻辑，计算结果应为Number([])的结果。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">Number</span>([])</span><br><span class="line"><span class="built_in">Number</span>([].toString())  <span class="comment">// 因为[].valueOf()不是原始值</span></span><br><span class="line"><span class="built_in">Number</span>(<span class="string">""</span>)</span><br><span class="line"><span class="number">0</span></span><br></pre></td></tr></table></figure>
+<p>##参考文献</p>
+<p><a href="http://yanhaijing.com/es5/#null" target="_blank" rel="noopener">w3c规范镜像版</a><br><a href="https://segmentfault.com/a/1190000011007975" target="_blank" rel="noopener">JavaScript 运算符规则与隐式类型转换详解</a><br><a href="https://www.cnblogs.com/ziyunfei/archive/2012/09/15/2685885.html" target="_blank" rel="noopener">JavaScript中,{}+{}等于多少?</a></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
     
       
 
@@ -900,6 +1297,166 @@ console.log(a.fn().call(a));
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://rufer.site/2017/03/01/2017-3-10/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Rufer">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16618956?s=460&v=4">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Rufer's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/03/01/2017-3-10/" itemprop="url">前端代码规范-一般规范</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-03-01T23:40:02+08:00">
+                2017-03-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/前端/" itemprop="url" rel="index">
+                    <span itemprop="name">前端</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/03/01/2017-3-10/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2017/03/01/2017-3-10/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          <h2 id="文件-资源命名"><a href="#文件-资源命名" class="headerlink" title="文件/资源命名"></a>文件/资源命名</h2><p>在 web 项目中，所有的文件名应该都遵循同一命名约定。以可读性而言，减号（-）是用来分隔文件名的不二之选。同时它也是常见的 URL 分隔符（i.e. //example.com/blog/my-blog-entry or //s.example.com/images/big-black-background.jpg），所以理所当然的，减号应该也是用来分隔资源名称的好选择。</p>
+<p>请确保文件命名总是以字母开头而不是数字。而以特殊字符开头命名的文件，一般都有特殊的含义与用处（比如 compass[^1] 中的下划线就是用来标记跳过直接编译的文件用的）。</p>
+<p>资源的字母名称必须全为小写，这是因为在某些对大小写字母敏感的操作系统中，当文件通过工具压缩混淆后，或者人为修改过后，大小写不同而导致引用文件不同的错误，很难被发现。</p>
+<p>还有一些情况下，需要对文件增加前后缀或特定的扩展名（比如 .min.js, .min.css），抑或一串前缀（比如 3fa89b.main.min.css）。这种情况下，建议使用点分隔符来区分这些在文件名中带有清晰意义的元数据。</p>
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2017/03/01/2017-3-10/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://rufer.site/2017/03/01/2017-3-11/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1021,166 +1578,6 @@ console.log(a.fn().call(a));
           <!--noindex-->
           <div class="post-button text-center">
             <a class="btn" href="/2017/03/01/2017-3-11/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://rufer.site/2017/03/01/2017-3-10/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Rufer">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16618956?s=460&v=4">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Rufer's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/03/01/2017-3-10/" itemprop="url">前端代码规范-一般规范</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-03-01T23:40:02+08:00">
-                2017-03-01
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/前端/" itemprop="url" rel="index">
-                    <span itemprop="name">前端</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/03/01/2017-3-10/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/03/01/2017-3-10/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          <h2 id="文件-资源命名"><a href="#文件-资源命名" class="headerlink" title="文件/资源命名"></a>文件/资源命名</h2><p>在 web 项目中，所有的文件名应该都遵循同一命名约定。以可读性而言，减号（-）是用来分隔文件名的不二之选。同时它也是常见的 URL 分隔符（i.e. //example.com/blog/my-blog-entry or //s.example.com/images/big-black-background.jpg），所以理所当然的，减号应该也是用来分隔资源名称的好选择。</p>
-<p>请确保文件命名总是以字母开头而不是数字。而以特殊字符开头命名的文件，一般都有特殊的含义与用处（比如 compass[^1] 中的下划线就是用来标记跳过直接编译的文件用的）。</p>
-<p>资源的字母名称必须全为小写，这是因为在某些对大小写字母敏感的操作系统中，当文件通过工具压缩混淆后，或者人为修改过后，大小写不同而导致引用文件不同的错误，很难被发现。</p>
-<p>还有一些情况下，需要对文件增加前后缀或特定的扩展名（比如 .min.js, .min.css），抑或一串前缀（比如 3fa89b.main.min.css）。这种情况下，建议使用点分隔符来区分这些在文件名中带有清晰意义的元数据。</p>
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2017/03/01/2017-3-10/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
@@ -1706,167 +2103,13 @@ console.log(window.x + &apos; &apos; + window.y);
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://rufer.site/2017/02/21/2017-2-21/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Rufer">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16618956?s=460&v=4">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Rufer's Blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/02/21/2017-2-21/" itemprop="url">我的前端之路</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-02-21T22:38:45+08:00">
-                2017-02-21
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/人生/" itemprop="url" rel="index">
-                    <span itemprop="name">人生</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/02/21/2017-2-21/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/02/21/2017-2-21/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          <h2 id="起源"><a href="#起源" class="headerlink" title="起源"></a>起源</h2><p>大家好，我是一个切图仔，现在在一家普通的公司做着普通的切图工作。现在是晚上10点钟，我正喝着香飘飘奶茶，在网易云音乐上听着武林外传电视剧。我的思绪随着故事里的对话飘到了很久以前：那时候我还在上初中，因为学校那边租的房子没有电视，为了我在租房那边有东西可以消遣，于是我在暑假的时候把mp3放在电视的播音口上，当武林外传开播，我就赶紧按下开始录音，当广告开始，我又马上从沙发上跳起来把录音关掉。。。结果到”验货”的时候发现好多录音都是杂音！气死我也。。。好像跑题了，本文的主题是我的职业之路，言归正传。。。</p>
-<p>提问：我是如何走上前端这条不归路的？<br>回答：故事要追溯到2015年。。。</p>
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2017/02/21/2017-2-21/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
+  <nav class="pagination">
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
+  </nav>
+
 
 
           </div>
@@ -1904,7 +2147,7 @@ console.log(window.x + &apos; &apos; + window.y);
                 alt="Rufer" />
             
               <p class="site-author-name" itemprop="name">Rufer</p>
-              <p class="site-description motion-element" itemprop="description">I want something just like this.</p>
+              <p class="site-description motion-element" itemprop="description">学好英文，多看文档。</p>
           </div>
 
           <nav class="site-state motion-element">
@@ -1914,7 +2157,7 @@ console.log(window.x + &apos; &apos; + window.y);
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-count">11</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1936,7 +2179,7 @@ console.log(window.x + &apos; &apos; + window.y);
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">9</span>
+                  <span class="site-state-item-count">8</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
