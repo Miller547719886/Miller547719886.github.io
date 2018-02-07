@@ -186,74 +186,62 @@
 <tr>
 <td>[]</td>
 <td>0</td>
-<td>“false”</td>
-<td></td>
+<td>“false” </td>
 </tr>
 <tr>
 <td>[1]</td>
 <td>[]</td>
-<td>“”</td>
-<td></td>
+<td>“” </td>
 </tr>
 <tr>
 <td>[1]</td>
 <td>[1]</td>
-<td>“1”</td>
-<td></td>
+<td>“1” </td>
 </tr>
 <tr>
 <td>[1, 2]</td>
 <td>[1, 2]</td>
-<td>“1,2”</td>
-<td></td>
+<td>“1,2” </td>
 </tr>
 <tr>
 <td>[{name: ‘bob’}]</td>
 <td>[{name: ‘bob’}]</td>
-<td>“[object Object]”</td>
-<td></td>
+<td>“[object Object]” </td>
 </tr>
 <tr>
 <td>{}</td>
 <td>{}</td>
-<td>“[object Object]”</td>
-<td></td>
+<td>“[object Object]” </td>
 </tr>
 <tr>
 <td>{name: ‘bob’}</td>
 <td>{name: ‘bob’}</td>
-<td>“[object Object]”</td>
-<td></td>
+<td>“[object Object]” </td>
 </tr>
 <tr>
 <td>{name: []}</td>
 <td>{name: []}</td>
-<td>“[object Object]”</td>
-<td></td>
+<td>“[object Object]” </td>
 </tr>
 <tr>
 <td>function () {}</td>
 <td>function () {}</td>
-<td>“function () {}”</td>
-<td></td>
+<td>“function () {}” </td>
 </tr>
 <tr>
 <td>new Date()</td>
 <td>1517903643452</td>
-<td>“Tue Feb 06 2018 15:54:34 GMT+0800 (中国标准时间)”</td>
-<td></td>
+<td>“Tue Feb 06 2018 15:54:34 GMT+0800 (中国标准时间)” </td>
 </tr>
 <tr>
 <td>Math</td>
 <td>Math</td>
-<td>“[object Math]”</td>
-<td></td>
+<td>“[object Math]” </td>
 </tr>
 <tr>
 <td>RegExp</td>
 <td>ƒ RegExp() { [native code] }</td>
-<td>“function RegExp() { [native code] }”</td>
-<td></td>
+<td>“function RegExp() { [native code] }” </td>
 </tr>
 </tbody>
 </table>
