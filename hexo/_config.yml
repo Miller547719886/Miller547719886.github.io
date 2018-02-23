@@ -151,4 +151,4 @@ deploy:
   type: git
   repo: 
     # 部署到github
-    github: https://github.com/Miller547719886/Miller547719886.github.io.git,master
+    github: git@github.com:Miller547719886/Miller547719886.github.io.git,master
