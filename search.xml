@@ -3,6 +3,36 @@
   
     
     <entry>
+      <title><![CDATA[从倒计时的实现深入探究setTimout与setInterval]]></title>
+      <url>/2018/02/22/2018-2-22/</url>
+      <content type="html"><![CDATA[<h2 id="拜年"><a href="#拜年" class="headerlink" title="拜年"></a>拜年</h2><p>新年伊始，本搬砖汪先给各位老爷们拜个晚年，祝各位技术大牛们在新的一年代码功底更进一步，家庭幸福美满！</p>
+<h2 id="需求"><a href="#需求" class="headerlink" title="需求"></a>需求</h2><p>下面进入正题：在翻阅segmentfault社区时看到某巨厂面试要求实现一个倒计时功能，之前也没有仔细实现过，趁年初来任务还没来得及分配，赶紧着手实现了一个。</p>
+<h2 id="第一版"><a href="#第一版" class="headerlink" title="第一版"></a>第一版</h2><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> period = <span class="number">60</span>*<span class="number">1000</span>*<span class="number">60</span>*<span class="number">2</span></span><br><span class="line"><span class="keyword">var</span> end = <span class="keyword">new</span> <span class="built_in">Date</span>().getTime() + period</span><br><span class="line"><span class="keyword">var</span> date = <span class="keyword">new</span> <span class="built_in">Date</span>(end)</span><br><span class="line"><span class="keyword">var</span> interval = <span class="number">1000</span></span><br><span class="line"><span class="keyword">var</span> count = <span class="number">0</span></span><br><span class="line"><span class="keyword">var</span> startTime = <span class="keyword">new</span> <span class="built_in">Date</span>().getTime()</span><br><span class="line"></span><br><span class="line"><span class="built_in">console</span>.log(<span class="string">'开始时间：'</span> + startTime)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">loopInner</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  count++</span><br><span class="line"></span><br><span class="line">  <span class="keyword">var</span> diff = end - <span class="keyword">new</span> <span class="built_in">Date</span>().getTime()</span><br><span class="line">  <span class="keyword">var</span> h = <span class="built_in">Math</span>.floor(diff / (<span class="number">60</span>*<span class="number">1000</span>*<span class="number">60</span>))</span><br><span class="line">  <span class="keyword">var</span> hdiff = diff % (<span class="number">60</span>*<span class="number">1000</span>*<span class="number">60</span>)</span><br><span class="line">  <span class="keyword">var</span> m = <span class="built_in">Math</span>.floor(hdiff / (<span class="number">60</span>*<span class="number">1000</span>))</span><br><span class="line">  <span class="keyword">var</span> mdiff = hdiff % (<span class="number">60</span>*<span class="number">1000</span>)</span><br><span class="line">  <span class="keyword">var</span> s = mdiff / <span class="number">1000</span></span><br><span class="line">  <span class="keyword">var</span> sCeil = <span class="built_in">Math</span>.ceil(s)</span><br><span class="line"></span><br><span class="line">  <span class="keyword">var</span> j = <span class="number">0</span></span><br><span class="line">  <span class="keyword">while</span> (j&lt;<span class="number">100000000</span>) &#123; <span class="comment">// 放大主线程代码执行时间</span></span><br><span class="line">    j++</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="built_in">console</span>.log(h + <span class="string">'小时'</span>, m + <span class="string">'分钟:'</span>, s + <span class="string">'秒（精确到毫秒）'</span>, sCeil + <span class="string">'秒（进一法）'</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">loop</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  loopInner() <span class="comment">// 首先var j = 0</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (count === <span class="number">100</span>) &#123;</span><br><span class="line">    <span class="keyword">var</span> endTime = <span class="keyword">new</span> <span class="built_in">Date</span>().getTime()</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'结束时间：'</span> + endTime) <span class="comment">// 打印开始时间</span></span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'时间差毫秒数：'</span> + <span class="built_in">Number</span>(endTime - startTime) + <span class="string">'对应秒数：'</span> + <span class="built_in">Number</span>(endTime - startTime) / <span class="number">1000</span>)</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'计时器计算秒数：100'</span>)</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> setTimeout(loop, interval)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">loop()</span><br></pre></td></tr></table></figure>
+<a id="more"></a>
+<p>结果如下：</p>
+<p><img src="/2018/02/22/2018-2-22/code_1_1.png" alt="code_1_1"><br><img src="/2018/02/22/2018-2-22/code_1_2.png" alt="code_1_2"></p>
+<p>第一版实现我使用的是递归的setTimeout方法，原因是之前曾经看到过递归的setTimeout能避免setInterval忽视代码执行时间，而一个事件队列里只会有一个setInterval事件导致的部分setInterval事件被忽略的情况。这么执行导致的结果是每次setTimeout的时间必然会大于1000ms（1000 + 主线程代码执行消耗的时间），而当这个<strong>主线程代码执行消耗的时间</strong>累加起来超过1s时，就会出现跳一秒的情况。这一版实现方案的结果不尽如人意。</p>
+<h2 id="第二版"><a href="#第二版" class="headerlink" title="第二版"></a>第二版</h2><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> period = <span class="number">60</span> * <span class="number">1000</span> * <span class="number">60</span> * <span class="number">2</span></span><br><span class="line"><span class="keyword">var</span> end</span><br><span class="line"><span class="keyword">var</span> date = <span class="keyword">new</span> <span class="built_in">Date</span>(end)</span><br><span class="line"><span class="keyword">var</span> interval = <span class="number">1000</span></span><br><span class="line"><span class="keyword">var</span> count = <span class="number">0</span></span><br><span class="line"><span class="keyword">var</span> startTime = <span class="keyword">new</span> <span class="built_in">Date</span>().getTime()</span><br><span class="line"></span><br><span class="line"><span class="built_in">console</span>.log(<span class="string">'开始时间：'</span> + startTime)</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> loop = <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">  count++</span><br><span class="line">  <span class="keyword">if</span> (count === <span class="number">100</span>) &#123;</span><br><span class="line">    <span class="keyword">var</span> endTime = <span class="keyword">new</span> <span class="built_in">Date</span>().getTime()</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'结束时间：'</span> + endTime) <span class="comment">// 打印开始时间</span></span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'时间差毫秒数：'</span> + <span class="built_in">Number</span>(endTime - startTime) + <span class="string">'对应秒数：'</span> + <span class="built_in">Number</span>(endTime - startTime) / <span class="number">1000</span>)</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'计时器计算秒数：100'</span>)</span><br><span class="line">    <span class="keyword">return</span> clearInterval(Itvid)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (!end) &#123; end = <span class="keyword">new</span> <span class="built_in">Date</span>().getTime() + period &#125;</span><br><span class="line">  <span class="keyword">var</span> diff = end - <span class="keyword">new</span> <span class="built_in">Date</span>().getTime()</span><br><span class="line">  <span class="keyword">var</span> h = <span class="built_in">Math</span>.floor(diff / (<span class="number">60</span> * <span class="number">1000</span> * <span class="number">60</span>))</span><br><span class="line">  <span class="keyword">var</span> hdiff = diff % (<span class="number">60</span> * <span class="number">1000</span> * <span class="number">60</span>)</span><br><span class="line">  <span class="keyword">var</span> m = <span class="built_in">Math</span>.floor(hdiff / (<span class="number">60</span> * <span class="number">1000</span>))</span><br><span class="line">  <span class="keyword">var</span> mdiff = hdiff % (<span class="number">60</span> * <span class="number">1000</span>)</span><br><span class="line">  <span class="keyword">var</span> s = mdiff / (<span class="number">1000</span>)</span><br><span class="line">  <span class="keyword">var</span> roundS = <span class="built_in">Math</span>.round(s)</span><br><span class="line"></span><br><span class="line">  <span class="keyword">var</span> j = <span class="number">0</span></span><br><span class="line">  <span class="keyword">while</span> (j&lt;<span class="number">100000000</span>) &#123; <span class="comment">// 放大主线程代码执行时间</span></span><br><span class="line">    j++</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="built_in">console</span>.log(h + <span class="string">'小时:'</span>, m + <span class="string">'分钟:'</span>, s + <span class="string">'秒（精确到毫秒）'</span>, roundS + <span class="string">'秒（四舍五入）'</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">var</span> Itvid = setInterval(loop, interval)</span><br></pre></td></tr></table></figure>
+<p>结果如下：</p>
+<p><img src="/2018/02/22/2018-2-22/code_2_1.png" alt="code_2_1"><br><img src="/2018/02/22/2018-2-22/code_2_2.png" alt="code_2_2"></p>
+<p>这一版的结果比较接近正确答案，利用setInterval不等待执行代码完成就直接加入队列的特性（参考<a href="http://www.cnblogs.com/youxin/p/3354924.html" target="_blank" rel="noopener">setInterval与setTimeout的精确度问题</a>），再加上用Math.round方法修正js的异步方法所造成的几毫秒的误差即可。而setInterval毕竟也是浏览器的api，同样是有几毫秒的差异的，这样的差异叠加数量过大，会造成与标准时间相隔几秒甚至几十秒的情况。</p>
+<h2 id="第三版"><a href="#第三版" class="headerlink" title="第三版"></a>第三版</h2><p>这一版是我选择在第一种写法的基础上做改良：每次循环中基于此次代码执行所消耗的时间对下次循环所消耗的时间间隔做修正。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> period = <span class="number">60</span> * <span class="number">1000</span> * <span class="number">60</span> * <span class="number">2</span></span><br><span class="line"><span class="keyword">var</span> startTime = <span class="keyword">new</span> <span class="built_in">Date</span>().getTime();</span><br><span class="line"><span class="keyword">var</span> count = <span class="number">0</span></span><br><span class="line"><span class="keyword">var</span> end = <span class="keyword">new</span> <span class="built_in">Date</span>().getTime() + period</span><br><span class="line"><span class="keyword">var</span> interval = <span class="number">1000</span></span><br><span class="line"><span class="keyword">var</span> currentInterval = interval</span><br><span class="line"></span><br><span class="line"><span class="built_in">console</span>.log(<span class="string">'开始时间：'</span> + startTime) <span class="comment">// 打印开始时间</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">loop</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  count++</span><br><span class="line">  <span class="keyword">var</span> offset = <span class="keyword">new</span> <span class="built_in">Date</span>().getTime() - (startTime + count * interval); <span class="comment">// 代码执行所消耗的时间</span></span><br><span class="line">  <span class="keyword">var</span> diff = end - <span class="keyword">new</span> <span class="built_in">Date</span>().getTime()</span><br><span class="line">  <span class="keyword">var</span> h = <span class="built_in">Math</span>.floor(diff / (<span class="number">60</span> * <span class="number">1000</span> * <span class="number">60</span>))</span><br><span class="line">  <span class="keyword">var</span> hdiff = diff % (<span class="number">60</span> * <span class="number">1000</span> * <span class="number">60</span>)</span><br><span class="line">  <span class="keyword">var</span> m = <span class="built_in">Math</span>.floor(hdiff / (<span class="number">60</span> * <span class="number">1000</span>))</span><br><span class="line">  <span class="keyword">var</span> mdiff = hdiff % (<span class="number">60</span> * <span class="number">1000</span>)</span><br><span class="line">  <span class="keyword">var</span> s = mdiff / (<span class="number">1000</span>)</span><br><span class="line">  <span class="keyword">var</span> sCeil = <span class="built_in">Math</span>.ceil(s)</span><br><span class="line">  <span class="keyword">var</span> sFloor = <span class="built_in">Math</span>.floor(s)</span><br><span class="line">  currentInterval = interval - offset <span class="comment">// 得到下一次循环所消耗的时间</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">var</span> j = <span class="number">0</span></span><br><span class="line">  <span class="keyword">while</span> (j&lt;<span class="number">100000000</span>) &#123; <span class="comment">// 放大主线程代码执行时间</span></span><br><span class="line">    j++</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'时：'</span>+h, <span class="string">'分：'</span>+m, <span class="string">'毫秒：'</span>+s, <span class="string">'秒向上取整：'</span>+sCeil, <span class="string">'代码执行时间：'</span>+offset+<span class="string">'ms'</span>, <span class="string">'下次循环间隔'</span>+currentInterval+<span class="string">'ms'</span>) <span class="comment">// 打印 时 分 秒 代码执行时间 下次循环间隔</span></span><br><span class="line">  <span class="keyword">if</span> (count === <span class="number">100</span>) &#123;</span><br><span class="line">    <span class="keyword">var</span> endTime = <span class="keyword">new</span> <span class="built_in">Date</span>().getTime()</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'结束时间：'</span> + endTime) <span class="comment">// 打印开始时间</span></span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'时间差毫秒数：'</span> + <span class="built_in">Number</span>(endTime - startTime) + <span class="string">'对应秒数：'</span> + <span class="built_in">Number</span>(endTime - startTime) / <span class="number">1000</span>)</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'计时器计算秒数：100'</span>)</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    setTimeout(loop, currentInterval)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">setTimeout(loop, currentInterval)</span><br></pre></td></tr></table></figure>
+<p>结果如下：</p>
+<p><img src="/2018/02/22/2018-2-22/code_3_1.png" alt="code_3_1"><br><img src="/2018/02/22/2018-2-22/code_3_2.png" alt="code_3_2"></p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.xuanfengge.com/js-realizes-precise-countdown.html" target="_blank" rel="noopener">JS实现活动精确倒计时</a><br><a href="https://www.w3.org/TR/animation-timing/" target="_blank" rel="noopener">w3.org</a><br><a href="http://www.cnblogs.com/youxin/p/3354924.html" target="_blank" rel="noopener">javascript线程解释（setTimeout,setInterval你不知道的事）</a></p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> javascript </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
       <title><![CDATA[javascript中隐式转换]]></title>
       <url>/2018/02/06/2018-2-6/</url>
       <content type="html"><![CDATA[<h2 id="javascript是弱类型语言"><a href="#javascript是弱类型语言" class="headerlink" title="javascript是弱类型语言"></a>javascript是弱类型语言</h2><p>之前记录过一篇文章区分了高级语言可以按照类型检查的严格程度分为强/弱类型语言，按照类型检查的时间点分为静态/动态类型语言。按照上篇文章所述，javascript是弱类型、动态检查的语言。这种语言的灵活性很高（不同类型的值可以做运算），但是也会更危险。如果对操作符的运算规则不熟悉，很可能造成自己意想不到的结果，从而导致对bug无从下手。</p>
@@ -651,6 +681,41 @@ myfunc.call(func,&quot;var&quot;);
     </entry>
     
     <entry>
+      <title><![CDATA[css命名法-BEM命名法详解]]></title>
+      <url>/2017/03/01/2017-3-11/</url>
+      <content type="html"><![CDATA[<p>BEM的意思就是块（block）、元素（element）、修饰符（modifier）,是由Yandex团队提出的一种前端命名方法论。这种巧妙的命名方法让你的CSS类对其他开发者来说更加透明而且更有意义。BEM命名约定更加严格，而且包含更多的信息，它们用于一个团队开发一个耗时的大项目。</p>
+<p>命名约定的模式如下：</p>
+<pre><code>.block{}  
+.block__element{}  
+.block--modifier{}  
+</code></pre><ul>
+<li>.block 代表了更高级别的抽象或组件。</li>
+<li>.block__element 代表.block的后代，用于形成一个完整的.block的整体。</li>
+<li>.block–modifier代表.block的不同状态或不同版本。</li>
+</ul>
+<p>之所以使用两个连字符和下划线而不是一个，是为了让你自己的块可以用单个连字符来界定，如：</p>
+<pre><code>.site-search{} /* 块 */  
+.site-search__field{} /* 元素 */  
+.site-search--full{} /* 修饰符 */    
+</code></pre><a id="more"></a>
+]]></content>
+      
+        <categories>
+            
+            <category> 前端 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> css </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
       <title><![CDATA[前端代码规范-一般规范]]></title>
       <url>/2017/03/01/2017-3-10/</url>
       <content type="html"><![CDATA[<h2 id="文件-资源命名"><a href="#文件-资源命名" class="headerlink" title="文件/资源命名"></a>文件/资源命名</h2><p>在 web 项目中，所有的文件名应该都遵循同一命名约定。以可读性而言，减号（-）是用来分隔文件名的不二之选。同时它也是常见的 URL 分隔符（i.e. //example.com/blog/my-blog-entry or //s.example.com/images/big-black-background.jpg），所以理所当然的，减号应该也是用来分隔资源名称的好选择。</p>
@@ -723,41 +788,6 @@ my-file.min.css
         <tags>
             
             <tag> 代码规范 </tag>
-            
-        </tags>
-        
-    </entry>
-    
-    <entry>
-      <title><![CDATA[css命名法-BEM命名法详解]]></title>
-      <url>/2017/03/01/2017-3-11/</url>
-      <content type="html"><![CDATA[<p>BEM的意思就是块（block）、元素（element）、修饰符（modifier）,是由Yandex团队提出的一种前端命名方法论。这种巧妙的命名方法让你的CSS类对其他开发者来说更加透明而且更有意义。BEM命名约定更加严格，而且包含更多的信息，它们用于一个团队开发一个耗时的大项目。</p>
-<p>命名约定的模式如下：</p>
-<pre><code>.block{}  
-.block__element{}  
-.block--modifier{}  
-</code></pre><ul>
-<li>.block 代表了更高级别的抽象或组件。</li>
-<li>.block__element 代表.block的后代，用于形成一个完整的.block的整体。</li>
-<li>.block–modifier代表.block的不同状态或不同版本。</li>
-</ul>
-<p>之所以使用两个连字符和下划线而不是一个，是为了让你自己的块可以用单个连字符来界定，如：</p>
-<pre><code>.site-search{} /* 块 */  
-.site-search__field{} /* 元素 */  
-.site-search--full{} /* 修饰符 */    
-</code></pre><a id="more"></a>
-]]></content>
-      
-        <categories>
-            
-            <category> 前端 </category>
-            
-        </categories>
-        
-        
-        <tags>
-            
-            <tag> css </tag>
             
         </tags>
         
@@ -1112,476 +1142,6 @@ my-file.min.css
         <tags>
             
             <tag> html </tag>
-            
-        </tags>
-        
-    </entry>
-    
-    <entry>
-      <title><![CDATA[前端代码规范-css/sass(scss)]]></title>
-      <url>/2017/02/28/2017-3-7/</url>
-      <content type="html"><![CDATA[<h2 id="ID-and-class-naming"><a href="#ID-and-class-naming" class="headerlink" title="ID and class naming"></a>ID and class naming</h2><p>ID和class(类)名总是使用可以反应元素目的和用途的名称，或其他通用名称。代替表象和晦涩难懂的名称。</p>
-<p>应该首选具体和反映元素目的的名称，因为这些是最可以理解的，而且发生变化的可能性最小。</p>
-<p>通用名称只是多个元素的备用名，他们兄弟元素之间是一样的，没有特别意义。<br>区分他们，使他们具有特殊意义，通常需要为“帮手”。</p>
-<p>尽管class(类)名和ID 的语义化对于计算机解析来说没有什么实际的意义，<br>语义化的名称 通常是正确的选择，因为它们所代表的信息含义，不包含表现的限制。</p>
-<a id="more"></a>
-<p>不推荐</p>
-<pre><code>.fw-800 {
-  font-weight: 800;
-}
-
-.red {
-  color: red;
-}
-</code></pre><p>推荐</p>
-<pre><code>.heavy {
-  font-weight: 800;
-}
-
-.important {
-  color: red;
-}
-</code></pre><h2 id="合理的避免使用ID"><a href="#合理的避免使用ID" class="headerlink" title="合理的避免使用ID"></a>合理的避免使用ID</h2><p>一般情况下ID不应该被应用于样式。<br>ID的样式不能被复用并且每个页面中你只能使用一次ID。<br>使用ID唯一有效的是确定网页或整个站点中的位置。<br>尽管如此，你应该始终考虑使用class，而不是id，除非只使用一次。</p>
-<p>不推荐</p>
-<pre><code>#content .title {
-  font-size: 2em;
-}
-</code></pre><p>推荐</p>
-<pre><code>.content .title {
-  font-size: 2em;
-}
-</code></pre><p>另一个反对使用ID的观点是含有ID选择器权重很高。<br>一个只包含一个ID选择器权重高于包含1000个class(类)名的选择器，这使得它很奇怪。</p>
-<pre><code>// 这个选择器权重高于下面的选择器
-#content .title {
-  color: red;
-}
-
-// than this selector!
-html body div.content.news-content .title.content-title.important {
-  color: blue;
-}
-</code></pre><h2 id="CSS选择器中避免标签名"><a href="#CSS选择器中避免标签名" class="headerlink" title="CSS选择器中避免标签名"></a>CSS选择器中避免标签名</h2><p>当构建选择器时应该使用清晰， 准确和有语义的class(类)名。不要使用标签选择器。 如果你只关心你的class(类)名<br>，而不是你的代码元素，这样会更容易维护。</p>
-<p>从分离的角度考虑,在表现层中不应该分配html标记/语义。<br>它可能是一个有序列表需要被改成一个无序列表，或者一个div将被转换成article。<br>如果你只使用具有实际意义的class(类)名，<br>并且不使用元素选择器，那么你只需要改变你的html标记，而不用改动你的CSS。</p>
-<p>不推荐</p>
-<pre><code>div.content &gt; header.content-header &gt; h2.title {
-  font-size: 2em;
-}
-</code></pre><p>推荐</p>
-<pre><code>.content &gt; .content-header &gt; .title {
-  font-size: 2em;
-}
-</code></pre><h2 id="尽可能的精确"><a href="#尽可能的精确" class="headerlink" title="尽可能的精确"></a>尽可能的精确</h2><p>很多前端开发人员写选择器链的时候不使用 直接子选择器（注：直接子选择器和后代选择器的区别）。<br>有时，这可能会导致疼痛的设计问题并且有时候可能会很耗性能。<br>然而，在任何情况下，这是一个非常不好的做法。<br>如果你不写很通用的，需要匹配到DOM末端的选择器， 你应该总是考虑直接子选择器。</p>
-<p>考虑下面的DOM:</p>
-<pre><code>&lt;article class=&quot;content news-content&quot;&gt;
-  &lt;span class=&quot;title&quot;&gt;News event&lt;/span&gt;
-  &lt;div class=&quot;content-body&quot;&gt;
-    &lt;div class=&quot;title content-title&quot;&gt;
-      Check this out
-    &lt;/div&gt;
-
-    &lt;p&gt;This is a news article content&lt;/p&gt;
-
-    &lt;div class=&quot;teaser&quot;&gt;
-      &lt;div class=&quot;title&quot;&gt;Buy this&lt;/div&gt;
-      &lt;div class=&quot;teaser-content&quot;&gt;Yey!&lt;/div&gt;
-    &lt;/div&gt;
-  &lt;/div&gt;
-&lt;/article&gt;
-</code></pre><p>下面的CSS将应用于有title类的全部三个元素。<br>然后，要解决content类下的title类 和 teaser类下的title类下不同的样式，这将需要更精确的选择器再次重写他们的样式。</p>
-<p>不推荐</p>
-<pre><code>.content .title {
-  font-size: 2rem;
-}
-</code></pre><p>推荐</p>
-<pre><code>.content &gt; .title {
-  font-size: 2rem;
-}
-
-.content &gt; .content-body &gt; .title {
-  font-size: 1.5rem;
-}
-
-.content &gt; .content-body &gt; .teaser &gt; .title {
-  font-size: 1.2rem;
-}
-</code></pre><h2 id="缩写属性"><a href="#缩写属性" class="headerlink" title="缩写属性"></a>缩写属性</h2><p>CSS提供了各种缩写属性（如 font 字体）应该尽可能使用，即使在只设置一个值的情况下。</p>
-<p>使用缩写属性对于代码效率和可读性是有很有用的。</p>
-<p>不推荐</p>
-<pre><code>border-top-style: none;
-font-family: palatino, georgia, serif;
-font-size: 100%;
-line-height: 1.6;
-padding-bottom: 2em;
-padding-left: 1em;
-padding-right: 1em;
-padding-top: 0;
-</code></pre><p>推荐</p>
-<pre><code>border-top: 0;
-font: 100%/1.6 palatino, georgia, serif;
-padding: 0 1em 2em;
-</code></pre><h2 id="0-和-单位"><a href="#0-和-单位" class="headerlink" title="0 和 单位"></a>0 和 单位</h2><p>省略“0”值后面的单位。不要在0值后面使用单位，除非有值。</p>
-<p>不推荐</p>
-<pre><code>padding-bottom: 0px;
-margin: 0em;
-</code></pre><p>推荐</p>
-<pre><code>padding-bottom: 0;
-margin: 0;
-</code></pre><h2 id="十六进制表示法"><a href="#十六进制表示法" class="headerlink" title="十六进制表示法"></a>十六进制表示法</h2><p>在可能的情况下，使用3个字符的十六进制表示法。<br>颜色值允许这样表示，<br>3个字符的十六进制表示法更简短。</p>
-<p>始终使用小写的十六进制数字。</p>
-<p>不推荐</p>
-<pre><code>color: #FF33AA;
-</code></pre><p>推荐</p>
-<pre><code>color: #f3a;
-</code></pre><h2 id="ID-和-Class（类）-名的分隔符"><a href="#ID-和-Class（类）-名的分隔符" class="headerlink" title="ID 和 Class（类） 名的分隔符"></a>ID 和 Class（类） 名的分隔符</h2><p>使用连字符（中划线）分隔ID和Class（类）名中的单词。为了增强课理解性，在选择器中不要使用除了连字符（中划线）以为的任何字符（包括没有）来连接单词和缩写。</p>
-<p>另外，作为该标准，预设属性选择器能识别连字符（中划线）作为单词[attribute|=value]的分隔符，<br>所以最好的坚持使用连字符作为分隔符。</p>
-<p>不推荐</p>
-<pre><code>.demoimage {}
-.error_status {}
-</code></pre><p>推荐</p>
-<pre><code>#video-id {}
-.ads-sample {}
-</code></pre><h2 id="Hacks"><a href="#Hacks" class="headerlink" title="Hacks"></a>Hacks</h2><p>避免用户代理检测以及CSS“hacks” – 首先尝试不同的方法。通过用户代理检测或特殊的CSS滤镜，变通的方法和 hacks 很容易解决样式差异。为了达到并保持一个有效的和可管理的代码库，这两种方法都应该被认为是最后的手段。换句话说，从长远来看，用户代理检测和hacks<br>会伤害项目，作为项目往往应该采取阻力最小的途径。也就是说，轻易允许使用用户代理检测和hacks 以后将过于频繁。</p>
-<h2 id="声明顺序"><a href="#声明顺序" class="headerlink" title="声明顺序"></a>声明顺序</h2><p>这是一个选择器内书写CSS属性顺序的大致轮廓。这是为了保证更好的可读性和可扫描重要。</p>
-<p>作为最佳实践，我们应该遵循以下顺序（应该按照下表的顺序）：</p>
-<p>结构性属性：</p>
-<ol>
-<li>display<ol>
-<li>position, left, top, right etc.</li>
-<li>overflow, float, clear etc.</li>
-<li>margin, padding</li>
-</ol>
-</li>
-<li>表现性属性： <ol>
-<li>background, border etc.</li>
-<li>font, text</li>
-</ol>
-</li>
-</ol>
-<p>不推荐</p>
-<pre><code>.box {
-    font-family: &apos;Arial&apos;, sans-serif;
-    border: 3px solid #ddd;
-    left: 30%;
-    position: absolute;
-    text-transform: uppercase;
-        background-color: #eee;
-    right: 30%;
-    isplay: block;
-    font-size: 1.5rem;
-    overflow: hidden;
-    padding: 1em;
-    margin: 1em;
-}
-</code></pre><p>推荐</p>
-<pre><code>.box {
-    display: block;
-    position: absolute;
-    left: 30%;
-    right: 30%;
-    overflow: hidden;
-    margin: 1em;
-    padding: 1em;
-    background-color: #eee;
-    border: 3px solid #ddd;
-    font-family: &apos;Arial&apos;, sans-serif;
-    font-size: 1.5rem;
-    text-transform: uppercase;
-}
-</code></pre><h2 id="声明结束"><a href="#声明结束" class="headerlink" title="声明结束"></a>声明结束</h2><p>为了保证一致性和可扩展性，每个声明应该用分号结束，每个声明换行。</p>
-<p>不推荐</p>
-<pre><code>.test {
-  display: block; height: 100px
-}
-</code></pre><p>推荐</p>
-<pre><code>.test {
-  display: block;
-  height: 100px;
-}
-</code></pre><h2 id="属性名结束"><a href="#属性名结束" class="headerlink" title="属性名结束"></a>属性名结束</h2><p>属性名的冒号后使用一个空格。出于一致性的原因，<br>属性和值（但属性和冒号之间没有空格）的之间始终使用一个空格。</p>
-<p>不推荐</p>
-<pre><code>h3 {
-  font-weight:bold;
-}
-</code></pre><p>推荐</p>
-<pre><code>h3 {
-  font-weight: bold;
-}
-</code></pre><h2 id="选择器和声明分离"><a href="#选择器和声明分离" class="headerlink" title="选择器和声明分离"></a>选择器和声明分离</h2><p>每个选择器和属性声明总是使用新的一行。</p>
-<p>不推荐</p>
-<pre><code>a:focus, a:active {
-  position: relative; top: 1px;
-}
-</code></pre><p>推荐</p>
-<pre><code>h1,
-h2,
-h3 {
-  font-weight: normal;
-  line-height: 1.2;
-}
-</code></pre><h2 id="规则分隔"><a href="#规则分隔" class="headerlink" title="规则分隔"></a>规则分隔</h2><p>规则之间始终有一个空行（双换行符）分隔。</p>
-<p>推荐</p>
-<pre><code>html {
-  background: #fff;
-}
-
-body {
-  margin: auto;
-  width: 50%;
-}
-</code></pre><h2 id="CSS引号"><a href="#CSS引号" class="headerlink" title="CSS引号"></a>CSS引号</h2><p>属性选择器或属性值用双引号（””），而不是单引号（”）括起来。<br>URI值（url()）不要使用引号。</p>
-<p>不推荐</p>
-<pre><code>@import url(&apos;//cdn.com/foundation.css&apos;);
-
-html {
-  font-family: &apos;open sans&apos;, arial, sans-serif;
-}
-
-body:after {
-  content: &apos;pause&apos;;
-}
-</code></pre><p>推荐</p>
-<pre><code>@import url(//cdn.com/foundation.css);
-
-html {
-  font-family: &quot;open sans&quot;, arial, sans-serif;
-}
-
-body:after {
-  content: &quot;pause&quot;;
-}
-</code></pre><h2 id="选择器嵌套-SCSS"><a href="#选择器嵌套-SCSS" class="headerlink" title="选择器嵌套 (SCSS)"></a>选择器嵌套 (SCSS)</h2><p>在Sass中你可以嵌套选择器，这可以使代码变得更清洁和可读。嵌套所有的选择器，但尽量避免嵌套没有任何内容的选择器。<br>如果你需要指定一些子元素的样式属性，而父元素将不什么样式属性，<br>可以使用常规的CSS选择器链。<br>这将防止您的脚本看起来过于复杂。</p>
-<p>不推荐</p>
-<pre><code>// Not a good example by not making use of nesting at all
-.content {
-  display: block;
-}
-
-.content &gt; .news-article &gt; .title {
-  font-size: 1.2em;
-}
-</code></pre><p>不推荐</p>
-<pre><code>// Using nesting is better but not in all cases
-// Avoid nesting when there is no attributes and use selector chains instead
-.content {
-  display: block;
-
-  &gt; .news-article {
-    &gt; .title {
-      font-size: 1.2em;
-    }
-  }
-}
-</code></pre><p>推荐</p>
-<pre><code>// This example takes the best approach while nesting but use selector chains where possible
-.content {
-  display: block;
-
-  &gt; .news-article &gt; .title {
-    font-size: 1.2em;
-  }
-}
-</code></pre><h2 id="嵌套中引入-空行-SCSS"><a href="#嵌套中引入-空行-SCSS" class="headerlink" title="嵌套中引入 空行 (SCSS)"></a>嵌套中引入 空行 (SCSS)</h2><p>嵌套选择器和CSS属性之间空一行。</p>
-<p>不推荐</p>
-<pre><code>.content {
-  display: block;
-  &gt; .news-article {
-    background-color: #eee;
-    &gt; .title {
-      font-size: 1.2em;
-    }
-    &gt; .article-footnote {
-      font-size: 0.8em;
-    }
-  }
-}
-</code></pre><p>推荐</p>
-<pre><code>.content {
-  display: block;
-
-  &gt; .news-article {
-    background-color: #eee;
-
-    &gt; .title {
-      font-size: 1.2em;
-    }
-
-    &gt; .article-footnote {
-      font-size: 0.8em;
-    }
-  }
-}
-</code></pre><h2 id="上下文媒体查询-SCSS"><a href="#上下文媒体查询-SCSS" class="headerlink" title="上下文媒体查询(SCSS)"></a>上下文媒体查询(SCSS)</h2><p>在Sass中，当你嵌套你的选择器时也可以使用上下文媒体查询。<br>在Sass中，你可以在任何给定的嵌套层次中使用媒体查询。<br>由此生成的CSS将被转换，这样的媒体查询将包裹选择器的形式呈现。</p>
-<p>这技术非常方便，<br>有助于保持媒体查询属于的上下文。</p>
-<p>第一种方法这可以让你先写你的手机样式，然后在任何你需要的地方<br>用上下文媒体查询以提供桌面样式。</p>
-<p>不推荐</p>
-<pre><code>// This mobile first example looks like plain CSS where the whole structure of SCSS is repeated
-// on the bottom in a media query. This is error prone and makes maintenance harder as it&apos;s not so easy to relate
-// the content in the media query to the content in the upper part (mobile style)
-
-.content-page {
-  font-size: 1.2rem;
-
-  &gt; .main {
-    background-color: whitesmoke;
-
-        &gt; .latest-news {
-      padding: 1rem;
-
-      &gt; .news-article {
-        padding: 1rem;
-
-        &gt; .title {
-          font-size: 2rem;
-        }
-      }
-    }
-
-    &gt; .content {
-      margin-top: 2rem;
-      padding: 1rem;
-    }
-  }
-
-  &gt; .page-footer {
-    margin-top: 2rem;
-    font-size: 1rem;
-  }
-}
-
-@media screen and (min-width: 641px) {
-  .content-page {
-    font-size: 1rem;
-
-    &gt; .main &gt; .latest-news &gt; .news-article &gt; .title {
-      font-size: 3rem;
-    }
-
-    &gt; .page-footer {
-      font-size: 0.8rem;
-    }
-  }
-}    
-</code></pre><p>推荐</p>
-<pre><code>// This is the same example as above but here we use contextual media queries in order to put the different styles
-// for different media into the right context.
-
-.content-page {
-  font-size: 1.2rem;
-
-  @media screen and (min-width: 641px) {
-    font-size: 1rem;
-  }
-
-  &gt; .main {
-    background-color: whitesmoke;
-
-    &gt; .latest-news {
-      padding: 1rem;
-
-      &gt; .news-article {
-        padding: 1rem;
-
-        &gt; .title {
-          font-size: 2rem;
-
-          @media screen and (min-width: 641px) {
-            font-size: 3rem;
-          }
-        }
-      }
-    }
-
-    &gt; .content {
-      margin-top: 2rem;
-      padding: 1rem;
-    }
-  }
-
-  &gt; .page-footer {
-    margin-top: 2rem;
-    font-size: 1rem;
-
-    @media screen and (min-width: 641px) {
-      font-size: 0.8rem;
-    }
-  }
-}
-</code></pre><h2 id="嵌套顺序和父级选择器-SCSS"><a href="#嵌套顺序和父级选择器-SCSS" class="headerlink" title="嵌套顺序和父级选择器(SCSS)"></a>嵌套顺序和父级选择器(SCSS)</h2><p>当使用Sass的嵌套功能的时候，<br>重要的是有一个明确的嵌套顺序，<br>以下内容是一个SCSS块应具有的顺序。</p>
-<ol>
-<li>当前选择器的样式属性</li>
-<li>父级选择器的伪类选择器 (:first-letter, :hover, :active etc)</li>
-<li>伪类元素 (:before and :after)</li>
-<li>父级选择器的声明样式 (.selected, .active, .enlarged etc.)</li>
-<li>用Sass的上下文媒体查询</li>
-<li>子选择器作为最后的部分</li>
-</ol>
-<p>The following example should illustrate how this ordering will achieve a clear structure while making use of the Sass parent selector.</p>
-<p>推荐</p>
-<pre><code>.product-teaser {
-  // 1. Style attributes
-  display: inline-block;
-  padding: 1rem;
-  background-color: whitesmoke;
-  color: grey;
-
-  // 2. Pseudo selectors with parent selector
-  &amp;:hover {
-    color: black;
-  }
-
-  // 3. Pseudo elements with parent selector
-  &amp;:before {
-    content: &quot;&quot;;
-    display: block;
-    border-top: 1px solid grey;
-  }
-
-  &amp;:after {
-    content: &quot;&quot;;
-    display: block;
-    border-top: 1px solid grey;
-  }
-
-  // 4. State classes with parent selector
-  &amp;.active {
-    background-color: pink;
-    color: red;
-
-    // 4.2. Pseuso selector in state class selector
-    &amp;:hover {
-      color: darkred;
-    }
-  }
-
-  // 5. Contextual media queries
-  @media screen and (max-width: 640px) {
-    display: block;
-    font-size: 2em;
-      }
-
-  // 6. Sub selectors
-  &gt; .content &gt; .title {
-    font-size: 1.2em;
-
-    // 6.5. Contextual media queries in sub selector
-    @media screen and (max-width: 640px) {
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-    }
-  }
-}
-</code></pre>]]></content>
-      
-        <categories>
-            
-            <category> 前端 </category>
-            
-        </categories>
-        
-        
-        <tags>
-            
-            <tag> css </tag>
             
         </tags>
         
@@ -2266,6 +1826,476 @@ var o2 = {
         <tags>
             
             <tag> JavaScript </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[前端代码规范-css/sass(scss)]]></title>
+      <url>/2017/02/28/2017-3-7/</url>
+      <content type="html"><![CDATA[<h2 id="ID-and-class-naming"><a href="#ID-and-class-naming" class="headerlink" title="ID and class naming"></a>ID and class naming</h2><p>ID和class(类)名总是使用可以反应元素目的和用途的名称，或其他通用名称。代替表象和晦涩难懂的名称。</p>
+<p>应该首选具体和反映元素目的的名称，因为这些是最可以理解的，而且发生变化的可能性最小。</p>
+<p>通用名称只是多个元素的备用名，他们兄弟元素之间是一样的，没有特别意义。<br>区分他们，使他们具有特殊意义，通常需要为“帮手”。</p>
+<p>尽管class(类)名和ID 的语义化对于计算机解析来说没有什么实际的意义，<br>语义化的名称 通常是正确的选择，因为它们所代表的信息含义，不包含表现的限制。</p>
+<a id="more"></a>
+<p>不推荐</p>
+<pre><code>.fw-800 {
+  font-weight: 800;
+}
+
+.red {
+  color: red;
+}
+</code></pre><p>推荐</p>
+<pre><code>.heavy {
+  font-weight: 800;
+}
+
+.important {
+  color: red;
+}
+</code></pre><h2 id="合理的避免使用ID"><a href="#合理的避免使用ID" class="headerlink" title="合理的避免使用ID"></a>合理的避免使用ID</h2><p>一般情况下ID不应该被应用于样式。<br>ID的样式不能被复用并且每个页面中你只能使用一次ID。<br>使用ID唯一有效的是确定网页或整个站点中的位置。<br>尽管如此，你应该始终考虑使用class，而不是id，除非只使用一次。</p>
+<p>不推荐</p>
+<pre><code>#content .title {
+  font-size: 2em;
+}
+</code></pre><p>推荐</p>
+<pre><code>.content .title {
+  font-size: 2em;
+}
+</code></pre><p>另一个反对使用ID的观点是含有ID选择器权重很高。<br>一个只包含一个ID选择器权重高于包含1000个class(类)名的选择器，这使得它很奇怪。</p>
+<pre><code>// 这个选择器权重高于下面的选择器
+#content .title {
+  color: red;
+}
+
+// than this selector!
+html body div.content.news-content .title.content-title.important {
+  color: blue;
+}
+</code></pre><h2 id="CSS选择器中避免标签名"><a href="#CSS选择器中避免标签名" class="headerlink" title="CSS选择器中避免标签名"></a>CSS选择器中避免标签名</h2><p>当构建选择器时应该使用清晰， 准确和有语义的class(类)名。不要使用标签选择器。 如果你只关心你的class(类)名<br>，而不是你的代码元素，这样会更容易维护。</p>
+<p>从分离的角度考虑,在表现层中不应该分配html标记/语义。<br>它可能是一个有序列表需要被改成一个无序列表，或者一个div将被转换成article。<br>如果你只使用具有实际意义的class(类)名，<br>并且不使用元素选择器，那么你只需要改变你的html标记，而不用改动你的CSS。</p>
+<p>不推荐</p>
+<pre><code>div.content &gt; header.content-header &gt; h2.title {
+  font-size: 2em;
+}
+</code></pre><p>推荐</p>
+<pre><code>.content &gt; .content-header &gt; .title {
+  font-size: 2em;
+}
+</code></pre><h2 id="尽可能的精确"><a href="#尽可能的精确" class="headerlink" title="尽可能的精确"></a>尽可能的精确</h2><p>很多前端开发人员写选择器链的时候不使用 直接子选择器（注：直接子选择器和后代选择器的区别）。<br>有时，这可能会导致疼痛的设计问题并且有时候可能会很耗性能。<br>然而，在任何情况下，这是一个非常不好的做法。<br>如果你不写很通用的，需要匹配到DOM末端的选择器， 你应该总是考虑直接子选择器。</p>
+<p>考虑下面的DOM:</p>
+<pre><code>&lt;article class=&quot;content news-content&quot;&gt;
+  &lt;span class=&quot;title&quot;&gt;News event&lt;/span&gt;
+  &lt;div class=&quot;content-body&quot;&gt;
+    &lt;div class=&quot;title content-title&quot;&gt;
+      Check this out
+    &lt;/div&gt;
+
+    &lt;p&gt;This is a news article content&lt;/p&gt;
+
+    &lt;div class=&quot;teaser&quot;&gt;
+      &lt;div class=&quot;title&quot;&gt;Buy this&lt;/div&gt;
+      &lt;div class=&quot;teaser-content&quot;&gt;Yey!&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/article&gt;
+</code></pre><p>下面的CSS将应用于有title类的全部三个元素。<br>然后，要解决content类下的title类 和 teaser类下的title类下不同的样式，这将需要更精确的选择器再次重写他们的样式。</p>
+<p>不推荐</p>
+<pre><code>.content .title {
+  font-size: 2rem;
+}
+</code></pre><p>推荐</p>
+<pre><code>.content &gt; .title {
+  font-size: 2rem;
+}
+
+.content &gt; .content-body &gt; .title {
+  font-size: 1.5rem;
+}
+
+.content &gt; .content-body &gt; .teaser &gt; .title {
+  font-size: 1.2rem;
+}
+</code></pre><h2 id="缩写属性"><a href="#缩写属性" class="headerlink" title="缩写属性"></a>缩写属性</h2><p>CSS提供了各种缩写属性（如 font 字体）应该尽可能使用，即使在只设置一个值的情况下。</p>
+<p>使用缩写属性对于代码效率和可读性是有很有用的。</p>
+<p>不推荐</p>
+<pre><code>border-top-style: none;
+font-family: palatino, georgia, serif;
+font-size: 100%;
+line-height: 1.6;
+padding-bottom: 2em;
+padding-left: 1em;
+padding-right: 1em;
+padding-top: 0;
+</code></pre><p>推荐</p>
+<pre><code>border-top: 0;
+font: 100%/1.6 palatino, georgia, serif;
+padding: 0 1em 2em;
+</code></pre><h2 id="0-和-单位"><a href="#0-和-单位" class="headerlink" title="0 和 单位"></a>0 和 单位</h2><p>省略“0”值后面的单位。不要在0值后面使用单位，除非有值。</p>
+<p>不推荐</p>
+<pre><code>padding-bottom: 0px;
+margin: 0em;
+</code></pre><p>推荐</p>
+<pre><code>padding-bottom: 0;
+margin: 0;
+</code></pre><h2 id="十六进制表示法"><a href="#十六进制表示法" class="headerlink" title="十六进制表示法"></a>十六进制表示法</h2><p>在可能的情况下，使用3个字符的十六进制表示法。<br>颜色值允许这样表示，<br>3个字符的十六进制表示法更简短。</p>
+<p>始终使用小写的十六进制数字。</p>
+<p>不推荐</p>
+<pre><code>color: #FF33AA;
+</code></pre><p>推荐</p>
+<pre><code>color: #f3a;
+</code></pre><h2 id="ID-和-Class（类）-名的分隔符"><a href="#ID-和-Class（类）-名的分隔符" class="headerlink" title="ID 和 Class（类） 名的分隔符"></a>ID 和 Class（类） 名的分隔符</h2><p>使用连字符（中划线）分隔ID和Class（类）名中的单词。为了增强课理解性，在选择器中不要使用除了连字符（中划线）以为的任何字符（包括没有）来连接单词和缩写。</p>
+<p>另外，作为该标准，预设属性选择器能识别连字符（中划线）作为单词[attribute|=value]的分隔符，<br>所以最好的坚持使用连字符作为分隔符。</p>
+<p>不推荐</p>
+<pre><code>.demoimage {}
+.error_status {}
+</code></pre><p>推荐</p>
+<pre><code>#video-id {}
+.ads-sample {}
+</code></pre><h2 id="Hacks"><a href="#Hacks" class="headerlink" title="Hacks"></a>Hacks</h2><p>避免用户代理检测以及CSS“hacks” – 首先尝试不同的方法。通过用户代理检测或特殊的CSS滤镜，变通的方法和 hacks 很容易解决样式差异。为了达到并保持一个有效的和可管理的代码库，这两种方法都应该被认为是最后的手段。换句话说，从长远来看，用户代理检测和hacks<br>会伤害项目，作为项目往往应该采取阻力最小的途径。也就是说，轻易允许使用用户代理检测和hacks 以后将过于频繁。</p>
+<h2 id="声明顺序"><a href="#声明顺序" class="headerlink" title="声明顺序"></a>声明顺序</h2><p>这是一个选择器内书写CSS属性顺序的大致轮廓。这是为了保证更好的可读性和可扫描重要。</p>
+<p>作为最佳实践，我们应该遵循以下顺序（应该按照下表的顺序）：</p>
+<p>结构性属性：</p>
+<ol>
+<li>display<ol>
+<li>position, left, top, right etc.</li>
+<li>overflow, float, clear etc.</li>
+<li>margin, padding</li>
+</ol>
+</li>
+<li>表现性属性： <ol>
+<li>background, border etc.</li>
+<li>font, text</li>
+</ol>
+</li>
+</ol>
+<p>不推荐</p>
+<pre><code>.box {
+    font-family: &apos;Arial&apos;, sans-serif;
+    border: 3px solid #ddd;
+    left: 30%;
+    position: absolute;
+    text-transform: uppercase;
+        background-color: #eee;
+    right: 30%;
+    isplay: block;
+    font-size: 1.5rem;
+    overflow: hidden;
+    padding: 1em;
+    margin: 1em;
+}
+</code></pre><p>推荐</p>
+<pre><code>.box {
+    display: block;
+    position: absolute;
+    left: 30%;
+    right: 30%;
+    overflow: hidden;
+    margin: 1em;
+    padding: 1em;
+    background-color: #eee;
+    border: 3px solid #ddd;
+    font-family: &apos;Arial&apos;, sans-serif;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+}
+</code></pre><h2 id="声明结束"><a href="#声明结束" class="headerlink" title="声明结束"></a>声明结束</h2><p>为了保证一致性和可扩展性，每个声明应该用分号结束，每个声明换行。</p>
+<p>不推荐</p>
+<pre><code>.test {
+  display: block; height: 100px
+}
+</code></pre><p>推荐</p>
+<pre><code>.test {
+  display: block;
+  height: 100px;
+}
+</code></pre><h2 id="属性名结束"><a href="#属性名结束" class="headerlink" title="属性名结束"></a>属性名结束</h2><p>属性名的冒号后使用一个空格。出于一致性的原因，<br>属性和值（但属性和冒号之间没有空格）的之间始终使用一个空格。</p>
+<p>不推荐</p>
+<pre><code>h3 {
+  font-weight:bold;
+}
+</code></pre><p>推荐</p>
+<pre><code>h3 {
+  font-weight: bold;
+}
+</code></pre><h2 id="选择器和声明分离"><a href="#选择器和声明分离" class="headerlink" title="选择器和声明分离"></a>选择器和声明分离</h2><p>每个选择器和属性声明总是使用新的一行。</p>
+<p>不推荐</p>
+<pre><code>a:focus, a:active {
+  position: relative; top: 1px;
+}
+</code></pre><p>推荐</p>
+<pre><code>h1,
+h2,
+h3 {
+  font-weight: normal;
+  line-height: 1.2;
+}
+</code></pre><h2 id="规则分隔"><a href="#规则分隔" class="headerlink" title="规则分隔"></a>规则分隔</h2><p>规则之间始终有一个空行（双换行符）分隔。</p>
+<p>推荐</p>
+<pre><code>html {
+  background: #fff;
+}
+
+body {
+  margin: auto;
+  width: 50%;
+}
+</code></pre><h2 id="CSS引号"><a href="#CSS引号" class="headerlink" title="CSS引号"></a>CSS引号</h2><p>属性选择器或属性值用双引号（””），而不是单引号（”）括起来。<br>URI值（url()）不要使用引号。</p>
+<p>不推荐</p>
+<pre><code>@import url(&apos;//cdn.com/foundation.css&apos;);
+
+html {
+  font-family: &apos;open sans&apos;, arial, sans-serif;
+}
+
+body:after {
+  content: &apos;pause&apos;;
+}
+</code></pre><p>推荐</p>
+<pre><code>@import url(//cdn.com/foundation.css);
+
+html {
+  font-family: &quot;open sans&quot;, arial, sans-serif;
+}
+
+body:after {
+  content: &quot;pause&quot;;
+}
+</code></pre><h2 id="选择器嵌套-SCSS"><a href="#选择器嵌套-SCSS" class="headerlink" title="选择器嵌套 (SCSS)"></a>选择器嵌套 (SCSS)</h2><p>在Sass中你可以嵌套选择器，这可以使代码变得更清洁和可读。嵌套所有的选择器，但尽量避免嵌套没有任何内容的选择器。<br>如果你需要指定一些子元素的样式属性，而父元素将不什么样式属性，<br>可以使用常规的CSS选择器链。<br>这将防止您的脚本看起来过于复杂。</p>
+<p>不推荐</p>
+<pre><code>// Not a good example by not making use of nesting at all
+.content {
+  display: block;
+}
+
+.content &gt; .news-article &gt; .title {
+  font-size: 1.2em;
+}
+</code></pre><p>不推荐</p>
+<pre><code>// Using nesting is better but not in all cases
+// Avoid nesting when there is no attributes and use selector chains instead
+.content {
+  display: block;
+
+  &gt; .news-article {
+    &gt; .title {
+      font-size: 1.2em;
+    }
+  }
+}
+</code></pre><p>推荐</p>
+<pre><code>// This example takes the best approach while nesting but use selector chains where possible
+.content {
+  display: block;
+
+  &gt; .news-article &gt; .title {
+    font-size: 1.2em;
+  }
+}
+</code></pre><h2 id="嵌套中引入-空行-SCSS"><a href="#嵌套中引入-空行-SCSS" class="headerlink" title="嵌套中引入 空行 (SCSS)"></a>嵌套中引入 空行 (SCSS)</h2><p>嵌套选择器和CSS属性之间空一行。</p>
+<p>不推荐</p>
+<pre><code>.content {
+  display: block;
+  &gt; .news-article {
+    background-color: #eee;
+    &gt; .title {
+      font-size: 1.2em;
+    }
+    &gt; .article-footnote {
+      font-size: 0.8em;
+    }
+  }
+}
+</code></pre><p>推荐</p>
+<pre><code>.content {
+  display: block;
+
+  &gt; .news-article {
+    background-color: #eee;
+
+    &gt; .title {
+      font-size: 1.2em;
+    }
+
+    &gt; .article-footnote {
+      font-size: 0.8em;
+    }
+  }
+}
+</code></pre><h2 id="上下文媒体查询-SCSS"><a href="#上下文媒体查询-SCSS" class="headerlink" title="上下文媒体查询(SCSS)"></a>上下文媒体查询(SCSS)</h2><p>在Sass中，当你嵌套你的选择器时也可以使用上下文媒体查询。<br>在Sass中，你可以在任何给定的嵌套层次中使用媒体查询。<br>由此生成的CSS将被转换，这样的媒体查询将包裹选择器的形式呈现。</p>
+<p>这技术非常方便，<br>有助于保持媒体查询属于的上下文。</p>
+<p>第一种方法这可以让你先写你的手机样式，然后在任何你需要的地方<br>用上下文媒体查询以提供桌面样式。</p>
+<p>不推荐</p>
+<pre><code>// This mobile first example looks like plain CSS where the whole structure of SCSS is repeated
+// on the bottom in a media query. This is error prone and makes maintenance harder as it&apos;s not so easy to relate
+// the content in the media query to the content in the upper part (mobile style)
+
+.content-page {
+  font-size: 1.2rem;
+
+  &gt; .main {
+    background-color: whitesmoke;
+
+        &gt; .latest-news {
+      padding: 1rem;
+
+      &gt; .news-article {
+        padding: 1rem;
+
+        &gt; .title {
+          font-size: 2rem;
+        }
+      }
+    }
+
+    &gt; .content {
+      margin-top: 2rem;
+      padding: 1rem;
+    }
+  }
+
+  &gt; .page-footer {
+    margin-top: 2rem;
+    font-size: 1rem;
+  }
+}
+
+@media screen and (min-width: 641px) {
+  .content-page {
+    font-size: 1rem;
+
+    &gt; .main &gt; .latest-news &gt; .news-article &gt; .title {
+      font-size: 3rem;
+    }
+
+    &gt; .page-footer {
+      font-size: 0.8rem;
+    }
+  }
+}    
+</code></pre><p>推荐</p>
+<pre><code>// This is the same example as above but here we use contextual media queries in order to put the different styles
+// for different media into the right context.
+
+.content-page {
+  font-size: 1.2rem;
+
+  @media screen and (min-width: 641px) {
+    font-size: 1rem;
+  }
+
+  &gt; .main {
+    background-color: whitesmoke;
+
+    &gt; .latest-news {
+      padding: 1rem;
+
+      &gt; .news-article {
+        padding: 1rem;
+
+        &gt; .title {
+          font-size: 2rem;
+
+          @media screen and (min-width: 641px) {
+            font-size: 3rem;
+          }
+        }
+      }
+    }
+
+    &gt; .content {
+      margin-top: 2rem;
+      padding: 1rem;
+    }
+  }
+
+  &gt; .page-footer {
+    margin-top: 2rem;
+    font-size: 1rem;
+
+    @media screen and (min-width: 641px) {
+      font-size: 0.8rem;
+    }
+  }
+}
+</code></pre><h2 id="嵌套顺序和父级选择器-SCSS"><a href="#嵌套顺序和父级选择器-SCSS" class="headerlink" title="嵌套顺序和父级选择器(SCSS)"></a>嵌套顺序和父级选择器(SCSS)</h2><p>当使用Sass的嵌套功能的时候，<br>重要的是有一个明确的嵌套顺序，<br>以下内容是一个SCSS块应具有的顺序。</p>
+<ol>
+<li>当前选择器的样式属性</li>
+<li>父级选择器的伪类选择器 (:first-letter, :hover, :active etc)</li>
+<li>伪类元素 (:before and :after)</li>
+<li>父级选择器的声明样式 (.selected, .active, .enlarged etc.)</li>
+<li>用Sass的上下文媒体查询</li>
+<li>子选择器作为最后的部分</li>
+</ol>
+<p>The following example should illustrate how this ordering will achieve a clear structure while making use of the Sass parent selector.</p>
+<p>推荐</p>
+<pre><code>.product-teaser {
+  // 1. Style attributes
+  display: inline-block;
+  padding: 1rem;
+  background-color: whitesmoke;
+  color: grey;
+
+  // 2. Pseudo selectors with parent selector
+  &amp;:hover {
+    color: black;
+  }
+
+  // 3. Pseudo elements with parent selector
+  &amp;:before {
+    content: &quot;&quot;;
+    display: block;
+    border-top: 1px solid grey;
+  }
+
+  &amp;:after {
+    content: &quot;&quot;;
+    display: block;
+    border-top: 1px solid grey;
+  }
+
+  // 4. State classes with parent selector
+  &amp;.active {
+    background-color: pink;
+    color: red;
+
+    // 4.2. Pseuso selector in state class selector
+    &amp;:hover {
+      color: darkred;
+    }
+  }
+
+  // 5. Contextual media queries
+  @media screen and (max-width: 640px) {
+    display: block;
+    font-size: 2em;
+      }
+
+  // 6. Sub selectors
+  &gt; .content &gt; .title {
+    font-size: 1.2em;
+
+    // 6.5. Contextual media queries in sub selector
+    @media screen and (max-width: 640px) {
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+  }
+}
+</code></pre>]]></content>
+      
+        <categories>
+            
+            <category> 前端 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> css </tag>
             
         </tags>
         
