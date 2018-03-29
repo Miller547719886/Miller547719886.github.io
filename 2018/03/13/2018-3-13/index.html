@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="javascript," />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Rufer's Blog" type="application/atom+xml" />
+
+
+
+
+
+
+<meta name="description" content="之前从浏览器的两个计时器角度出发使用了不同计时器的不同使用方法实现倒计时效果，而一个功能的优雅实现远不止于此。还要看的更远，想的更多。那么一个倒计时功能除了精确度还有什么地方需要注意？ 补0倒计时中的补0需求可以说十分常见了，功能要实现起来也很方便。 leftpad这个名词大家应该不会陌生，前端时间闹的沸沸扬扬的left-pad 和 npm 的那些事甚至导致了多个开源项目的崩溃，这也提醒我们作为开">
+<meta name="keywords" content="javascript">
+<meta property="og:type" content="article">
+<meta property="og:title" content="如何优雅的实现靠谱的前端倒计时（2）">
+<meta property="og:url" content="http://rufer.site/2018/03/13/2018-3-13/index.html">
+<meta property="og:site_name" content="Rufer&#39;s Blog">
+<meta property="og:description" content="之前从浏览器的两个计时器角度出发使用了不同计时器的不同使用方法实现倒计时效果，而一个功能的优雅实现远不止于此。还要看的更远，想的更多。那么一个倒计时功能除了精确度还有什么地方需要注意？ 补0倒计时中的补0需求可以说十分常见了，功能要实现起来也很方便。 leftpad这个名词大家应该不会陌生，前端时间闹的沸沸扬扬的left-pad 和 npm 的那些事甚至导致了多个开源项目的崩溃，这也提醒我们作为开">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://rufer.site/2018/03/13/2018-3-13/code.png">
+<meta property="og:image" content="https://github.com/gomeplusFED/blog/blob/master/2016-04/do-you-really-understand-how-to-write-a-countdown-by-javascript.md">
+<meta property="og:image" content="https://www.cnblogs.com/ppforever/p/4344912.html?tvd">
+<meta property="og:updated_time" content="2018-03-15T07:40:08.206Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="如何优雅的实现靠谱的前端倒计时（2）">
+<meta name="twitter:description" content="之前从浏览器的两个计时器角度出发使用了不同计时器的不同使用方法实现倒计时效果，而一个功能的优雅实现远不止于此。还要看的更远，想的更多。那么一个倒计时功能除了精确度还有什么地方需要注意？ 补0倒计时中的补0需求可以说十分常见了，功能要实现起来也很方便。 leftpad这个名词大家应该不会陌生，前端时间闹的沸沸扬扬的left-pad 和 npm 的那些事甚至导致了多个开源项目的崩溃，这也提醒我们作为开">
+<meta name="twitter:image" content="http://rufer.site/2018/03/13/2018-3-13/code.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://rufer.site/2018/03/13/2018-3-13/"/>
+
+
+
+
+
+  <title>如何优雅的实现靠谱的前端倒计时（2） | Rufer's Blog</title>
+  
+
+
+
+
+
+  <script type="text/javascript">
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?485fcf1afa60502f13f62c26dc2f39b2";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Rufer's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">Do your best.</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-commonweal">
+          <a href="/404/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-heartbeat"></i> <br />
+            
+            公益404
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://rufer.site/2018/03/13/2018-3-13/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Rufer">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/16618956?s=460&v=4">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Rufer's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">如何优雅的实现靠谱的前端倒计时（2）</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-03-13T10:43:51+08:00">
+                2018-03-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/03/13/2018-3-13/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/03/13/2018-3-13/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>之前从浏览器的两个计时器角度出发使用了不同计时器的不同使用方法实现倒计时效果，而一个功能的优雅实现远不止于此。还要看的更远，想的更多。那么一个倒计时功能除了精确度还有什么地方需要注意？</p>
+<h2 id="补0"><a href="#补0" class="headerlink" title="补0"></a>补0</h2><p>倒计时中的补0需求可以说十分常见了，功能要实现起来也很方便。</p>
+<p>leftpad这个名词大家应该不会陌生，前端时间闹的沸沸扬扬的<a href="https://zhuanlan.zhihu.com/p/20707235" target="_blank" rel="noopener">left-pad 和 npm 的那些事</a>甚至导致了多个开源项目的崩溃，这也提醒我们作为开发者需要具备一定的硬编码能力。</p>
+<p>leftpad这个代码块的功能就是”补位”。要实现这个功能其实很简单，简单的10来行代码就能搞定，这里给出leftpad模块的代码：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 字符串补位</span></span><br><span class="line"><span class="comment"> * @param str &#123;String, Number&#125; 原字符串</span></span><br><span class="line"><span class="comment"> * @param len &#123;Number&#125; 补位后总长度</span></span><br><span class="line"><span class="comment"> * @param ch &#123;Number, String&#125; 补位单位 </span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="built_in">module</span>.exports = leftpad;</span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">leftpad</span> (<span class="params">str, len, ch</span>) </span>&#123;</span><br><span class="line">  str = <span class="built_in">String</span>(str); <span class="comment">// 转化为字符串</span></span><br><span class="line">  <span class="keyword">var</span> i = <span class="number">-1</span>; <span class="comment">// 初始化索引值</span></span><br><span class="line">  <span class="keyword">if</span> (!ch &amp;&amp; ch !== <span class="number">0</span>) ch = <span class="string">' '</span>; <span class="comment">// 初始化补位符号</span></span><br><span class="line">  len = len - str.length; <span class="comment">// 初始化补位长度</span></span><br><span class="line">  <span class="keyword">while</span> (++i &lt; len) &#123; <span class="comment">// 循环补位</span></span><br><span class="line">    str = ch + str;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> str; <span class="comment">// 返回补位后字符串</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>而补0操作只需要对时、分、秒这类时间单位分别使用<code>leftpad(timeStr, 2, 0)</code>即可。</p>
+<h2 id="阻塞时间超过定时器间隔"><a href="#阻塞时间超过定时器间隔" class="headerlink" title="阻塞时间超过定时器间隔"></a>阻塞时间超过定时器间隔</h2><p>上篇文章中有遗留一个问题：倒计时的定时器时间间隔一般为1s，若同步代码执行时间需要超过1s，会出现怎样的情况？</p>
+<p>为了放大这个问题，我们将上篇文章的第二种实现方式中，阻塞代码加大循环总量：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> (j&lt;(<span class="number">100000000</span> * <span class="number">40</span>)) &#123; <span class="comment">// 放大主线程代码执行时间（阻塞大概2秒）</span></span><br><span class="line">  j++</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>除了循环代码以外，其他代码不变。调用结果：</p>
+<p><img src="/2018/03/13/2018-3-13/code.png" alt="code"></p>
+<p>通过结果可以发现两点：</p>
+<ol>
+<li>setInterval并不是标准的按照定时器间隔执行的，还是会受到同步代码阻塞影响。</li>
+<li>阻塞时，setInterval会在其专属的事件队列中排队，等待前面的事件执行完。</li>
+</ol>
+<blockquote>
+<p>如何解决堆积问题呢？因为阻塞是不可能被解决的，那么最简单的方法就是把setInterval换成setTimeout，使用一个递归来造成每隔多久执行一次的功能。当然阻塞是无法被解决的，这里的阻塞不仅仅有回调中的，还有浏览器中的方方面面的阻塞，比如用户的一些操作行为，其他定时器等外部的阻塞，所以这也就是无论我们如何做，页面开久了，定时器都会不准，或者说，变慢的根本原因。 –摘抄自知乎</p>
+</blockquote>
+<p>对于阻塞我们没有太好的办法避免，只能从代码层面尽力保证定时器内的回调代码不要过于复杂，否则页面保持时间一长，倒计时就不准了。</p>
+<h2 id="编写优雅的倒计时功能代码"><a href="#编写优雅的倒计时功能代码" class="headerlink" title="编写优雅的倒计时功能代码"></a>编写优雅的倒计时功能代码</h2><p>接下来从设计模式层面思考如何写一个倒计时功能。</p>
+<p>这里找到了两段很不错的实现方案来拜读一下：</p>
+<h3 id="方案一"><a href="#方案一" class="headerlink" title="方案一"></a>方案一</h3><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> EventNotifys = [];</span><br><span class="line"><span class="keyword">var</span> Event = &#123; <span class="comment">// 观察者模式实例</span></span><br><span class="line">    notify: <span class="function"><span class="keyword">function</span>(<span class="params">eventName, data</span>)</span>&#123;&#125;, <span class="comment">// 触发</span></span><br><span class="line">    subscribe: <span class="function"><span class="keyword">function</span> (<span class="params">eventName, callback</span>) </span>&#123;&#125;, <span class="comment">// 注册</span></span><br><span class="line">    unsubscribe: <span class="function"><span class="keyword">function</span> (<span class="params">eventName, callback</span>) </span>&#123;&#125; <span class="comment">// 注销</span></span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">var</span> timer = <span class="literal">null</span>;</span><br><span class="line"></span><br><span class="line">$.countDown = <span class="function"><span class="keyword">function</span>(<span class="params">deadline,domParam</span>)</span>&#123;</span><br><span class="line">    <span class="keyword">var</span> that = <span class="keyword">this</span>, <span class="comment">// 保存上下文</span></span><br><span class="line">        MILLS_OFFSET = <span class="number">15</span>; <span class="comment">// 时间偏差修正指标</span></span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">CountDown</span>(<span class="params"></span>)</span>&#123; <span class="comment">// 原型构造器</span></span><br><span class="line">        <span class="keyword">this</span>.deadline = deadline; <span class="comment">// 结束时间</span></span><br><span class="line">        <span class="keyword">this</span>.domParam = domParam; <span class="comment">// 时间格式对应的dom元素选择器</span></span><br><span class="line">    &#125;;</span><br><span class="line">    CountDown.prototype = &#123; <span class="comment">// 继承辅助方法</span></span><br><span class="line">        leftPad: <span class="function"><span class="keyword">function</span>(<span class="params">n</span>)</span>&#123;&#125;,</span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">        * 计算时差</span></span><br><span class="line"><span class="comment">        * @returns &#123;&#123;sec: string, mini: string, hour: string, day: string, month: string, year: string&#125;&#125;</span></span><br><span class="line"><span class="comment">        */</span></span><br><span class="line">        caculate: <span class="function"><span class="keyword">function</span>(<span class="params"></span>)</span>&#123;&#125;, <span class="comment">//</span></span><br><span class="line">        <span class="comment">/*刷新dom*/</span></span><br><span class="line">        refresh: <span class="function"><span class="keyword">function</span>(<span class="params"></span>)</span>&#123;&#125;</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="keyword">var</span> countDown = <span class="keyword">new</span> CountDown(); <span class="comment">// 新建实例</span></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 启动定时器</span></span><br><span class="line"><span class="comment">     * @param first 是否首次进入</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">startTimer</span>(<span class="params">first</span>)</span>&#123;</span><br><span class="line">        !first &amp;&amp; Event.notify(<span class="string">'TIMER'</span>); <span class="comment">// 触发</span></span><br><span class="line">        <span class="comment">//若是首次进入，则根据当前时间的毫秒数进行纠偏，延迟1000-当前毫秒数达到整数秒后开始更新UI</span></span><br><span class="line">        <span class="comment">//否则直接1秒后更新UI</span></span><br><span class="line">        <span class="comment">//若当前毫秒数大于MILLS_OFFSET 15，则修正延时数值与系统时间同步</span></span><br><span class="line">        <span class="keyword">var</span> interval = first</span><br><span class="line">                       ?(<span class="number">1000</span> - mills)</span><br><span class="line">                       :(mills &gt; MILLS_OFFSET ? (<span class="number">1000</span> - mills):<span class="number">1000</span>) <span class="comment">// 定位到整秒</span></span><br><span class="line">        mills = <span class="keyword">new</span> <span class="built_in">Date</span>().getMilliseconds();</span><br><span class="line">        timer = setTimeout(<span class="built_in">arguments</span>.callee, interval);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 订阅一次事件</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    Event.subscribe(<span class="string">'TIMER'</span>, countDown.refresh.bind(countDown));</span><br><span class="line">    <span class="comment">//首次初始化时启动定时器</span></span><br><span class="line">    !timer &amp;&amp; startTimer(<span class="literal">true</span>);</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*dom结构和样式与js分离，这里指定倒计时的dom节点信息作为配置*/</span></span><br><span class="line">$.countDown(<span class="string">'20160517 220451'</span>,&#123;</span><br><span class="line">    sec: $(<span class="string">"#seconds6"</span>),</span><br><span class="line">    mini: $(<span class="string">"#minute6"</span>),</span><br><span class="line">    hour: $(<span class="string">"#hour6"</span>),</span><br><span class="line">    day: $(<span class="string">"#day6"</span>),</span><br><span class="line">    month: $(<span class="string">"#month6"</span>),</span><br><span class="line">    year: $(<span class="string">"#year6"</span>)</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+<p>这个方案使用观察者模式，将定时任务与刷新DOM的逻辑解耦了，在对时间精度的处理上，首次触发定时器的定时间隔与系统时间做校对，实现精确到整秒后开始计时。同时设定了一个代码阻塞时间的预设值，用于做循环setTimeout的时间间隔的修正。对leftpad之类的辅助方法，作者的处理是用继承的模式承载（由于这类函数式辅助函数而不是使用实例所依赖的函数，更好的解决办法是作为构造器内的私有方法并且将函数名前面加上<code>_</code>前缀）。</p>
+<h3 id="方案二"><a href="#方案二" class="headerlink" title="方案二"></a>方案二</h3><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @author xiaojue</span></span><br><span class="line"><span class="comment"> * @date 20160420</span></span><br><span class="line"><span class="comment"> * @fileoverview 倒计时想太多版</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">function</span> <span class="title">timer</span>(<span class="params">delay</span>) </span>&#123; <span class="comment">// 计时器类构造器</span></span><br><span class="line">    <span class="keyword">this</span>._queue = [];</span><br><span class="line">    <span class="keyword">this</span>.stop = <span class="literal">false</span>;</span><br><span class="line">    <span class="keyword">this</span>._createTimer(delay);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  timer.prototype = &#123; <span class="comment">// 计时器类继承对象</span></span><br><span class="line">    <span class="keyword">constructor</span>: timer,</span><br><span class="line">    _createTimer: function(delay) &#123; <span class="comment">// 辅助方法：创建timer</span></span><br><span class="line">      <span class="keyword">var</span> self = <span class="keyword">this</span>;</span><br><span class="line">      <span class="keyword">var</span> first = <span class="literal">true</span>;</span><br><span class="line">      (<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="keyword">var</span> s = <span class="keyword">new</span> <span class="built_in">Date</span>();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; self._queue.length; i++) &#123; <span class="comment">// 按照栈内顺序依次执行回调</span></span><br><span class="line">          self._queue[i]();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (!self.stop) &#123; <span class="comment">// 如果没有停止计时器</span></span><br><span class="line">          <span class="keyword">var</span> cost = <span class="keyword">new</span> <span class="built_in">Date</span>() - s;</span><br><span class="line">          delay = first ? delay : ((cost &gt; delay) ? cost - delay : delay); <span class="comment">// 计算下次定时任务时间间隔</span></span><br><span class="line">          setTimeout(<span class="built_in">arguments</span>.callee, delay);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;)();</span><br><span class="line">      first = <span class="literal">false</span>;</span><br><span class="line">    &#125;,</span><br><span class="line">    add: <span class="function"><span class="keyword">function</span>(<span class="params">cb</span>) </span>&#123;</span><br><span class="line">      <span class="keyword">this</span>._queue.push(cb);</span><br><span class="line">      <span class="keyword">this</span>.stop = <span class="literal">false</span>;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">this</span>._queue.length - <span class="number">1</span>;</span><br><span class="line">    &#125;,</span><br><span class="line">    remove: <span class="function"><span class="keyword">function</span>(<span class="params">index</span>) </span>&#123;</span><br><span class="line">      <span class="keyword">this</span>._queue.splice(index, <span class="number">1</span>);</span><br><span class="line">      <span class="keyword">if</span>(!<span class="keyword">this</span>._queue.length)&#123;</span><br><span class="line">        <span class="keyword">this</span>.stop = <span class="literal">true</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">function</span> <span class="title">TimePool</span>(<span class="params"></span>)</span>&#123; <span class="comment">// 定时器池</span></span><br><span class="line">    <span class="keyword">this</span>._pool = &#123;&#125;;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  TimePool.prototype = &#123;</span><br><span class="line">    <span class="keyword">constructor</span>:TimePool,</span><br><span class="line">    getTimer:function(delayTime)&#123;</span><br><span class="line">      <span class="keyword">var</span> t = <span class="keyword">this</span>._pool[delayTime];</span><br><span class="line">      <span class="keyword">return</span> t ? t : (<span class="keyword">this</span>._pool[delayTime] = <span class="keyword">new</span> timer(delayTime)); <span class="comment">// 更新定时器池同时创建计时器实例</span></span><br><span class="line">    &#125;,</span><br><span class="line">    removeTimer:<span class="function"><span class="keyword">function</span>(<span class="params">delayTime</span>)</span>&#123;</span><br><span class="line">      <span class="keyword">if</span>(<span class="keyword">this</span>._pool[delayTime])&#123;</span><br><span class="line">        <span class="keyword">delete</span> <span class="keyword">this</span>._pool[delayTime];</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">var</span> delayTime = <span class="number">1000</span>; <span class="comment">// 默认时延</span></span><br><span class="line">  <span class="keyword">var</span> msInterval = <span class="keyword">new</span> TimePool().getTimer(delayTime);</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">function</span> <span class="title">countDown</span>(<span class="params">config</span>) </span>&#123; <span class="comment">// 倒计时类</span></span><br><span class="line">    <span class="keyword">var</span> defaultOptions = &#123;</span><br><span class="line">      fixNow: <span class="number">3</span> * <span class="number">1000</span>,</span><br><span class="line">      fixNowDate: <span class="literal">false</span>,</span><br><span class="line">      now: <span class="keyword">new</span> <span class="built_in">Date</span>().valueOf(),</span><br><span class="line">      template: <span class="string">'&#123;d&#125;:&#123;h&#125;:&#123;m&#125;:&#123;s&#125;'</span>,</span><br><span class="line">      render: <span class="function"><span class="keyword">function</span>(<span class="params">outstring</span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(outstring);</span><br><span class="line">      &#125;,</span><br><span class="line">      end: <span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'the end!'</span>);</span><br><span class="line">      &#125;,</span><br><span class="line">      endTime: <span class="keyword">new</span> <span class="built_in">Date</span>().valueOf() + <span class="number">5</span> * <span class="number">1000</span> * <span class="number">60</span></span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">var</span> i <span class="keyword">in</span> defaultOptions) &#123;</span><br><span class="line">      <span class="keyword">if</span> (defaultOptions.hasOwnProperty(i)) &#123;</span><br><span class="line">        <span class="keyword">this</span>[i] = config[i] || defaultOptions[i];</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">this</span>.init();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  countDown.prototype = &#123; <span class="comment">// 倒计时类继承对象</span></span><br><span class="line">    <span class="keyword">constructor</span>: countDown,</span><br><span class="line">    init: function() &#123;</span><br><span class="line">      <span class="keyword">var</span> self = <span class="keyword">this</span>;</span><br><span class="line">      <span class="keyword">if</span> (<span class="keyword">this</span>.fixNowDate) &#123;</span><br><span class="line">        <span class="keyword">var</span> fix = <span class="keyword">new</span> timer(<span class="keyword">this</span>.fixNow);</span><br><span class="line">        fix.add(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">          self.getNowTime(<span class="function"><span class="keyword">function</span>(<span class="params">now</span>) </span>&#123;</span><br><span class="line">            self.now = now;</span><br><span class="line">          &#125;);</span><br><span class="line">        &#125;);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">var</span> index = msInterval.add(<span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">        self.now += delayTime;</span><br><span class="line">        <span class="keyword">if</span> (self.now &gt;= self.endTime) &#123;</span><br><span class="line">          msInterval.remove(index);</span><br><span class="line">          self.end();</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">          self.render(self.getOutString());</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;);</span><br><span class="line">    &#125;,</span><br><span class="line">    getBetween: <span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">      <span class="keyword">return</span> _formatTime(<span class="keyword">this</span>.endTime - <span class="keyword">this</span>.now);</span><br><span class="line">    &#125;,</span><br><span class="line">    getOutString: <span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">      <span class="keyword">var</span> between = <span class="keyword">this</span>.getBetween();</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">this</span>.template.replace(<span class="regexp">/&#123;(\w*)&#125;/g</span>, <span class="function"><span class="keyword">function</span>(<span class="params">m, key</span>) </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> between.hasOwnProperty(key) ? between[key] : <span class="string">""</span>;</span><br><span class="line">      &#125;);</span><br><span class="line">    &#125;,</span><br><span class="line">    getNowTime: <span class="function"><span class="keyword">function</span>(<span class="params">cb</span>) </span>&#123;</span><br><span class="line">      <span class="keyword">var</span> xhr = <span class="keyword">new</span> XMLHttpRequest();</span><br><span class="line">      xhr.open(<span class="string">'get'</span>, <span class="string">'/'</span>, <span class="literal">true</span>);</span><br><span class="line">      xhr.onreadystatechange = <span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (xhr.readyState === <span class="number">3</span>) &#123;</span><br><span class="line">          <span class="keyword">var</span> now = xhr.getResponseHeader(<span class="string">'Date'</span>);</span><br><span class="line">          cb(<span class="keyword">new</span> <span class="built_in">Date</span>(now).valueOf());</span><br><span class="line">          xhr.abort();</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;;</span><br><span class="line">      xhr.send(<span class="literal">null</span>);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">function</span> <span class="title">_cover</span>(<span class="params">num</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">var</span> n = <span class="built_in">parseInt</span>(num, <span class="number">10</span>);</span><br><span class="line">    <span class="keyword">return</span> n &lt; <span class="number">10</span> ? <span class="string">'0'</span> + n : n;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">function</span> <span class="title">_formatTime</span>(<span class="params">ms</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">var</span> s = ms / <span class="number">1000</span>,</span><br><span class="line">      m = s / <span class="number">60</span>;</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">      d: _cover(m / <span class="number">60</span> / <span class="number">24</span>),</span><br><span class="line">      h: _cover(m / <span class="number">60</span> % <span class="number">24</span>),</span><br><span class="line">      m: _cover(m % <span class="number">60</span>),</span><br><span class="line">      s: _cover(s % <span class="number">60</span>)</span><br><span class="line">    &#125;;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">var</span> now = <span class="built_in">Date</span>.now();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">new</span> countDown(&#123;&#125;);</span><br><span class="line">  <span class="keyword">new</span> countDown(&#123;</span><br><span class="line">    endTime: now + <span class="number">8</span> * <span class="number">1000</span></span><br><span class="line">  &#125;);</span><br><span class="line"></span><br><span class="line">&#125;)();</span><br></pre></td></tr></table></figure>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><img src="https://github.com/gomeplusFED/blog/blob/master/2016-04/do-you-really-understand-how-to-write-a-countdown-by-javascript.md" alt="你真的知道怎么用javascript来写一个倒计时吗 ?"><br><img src="https://www.cnblogs.com/ppforever/p/4344912.html?tvd" alt="js异步处理工作机制(setTimeout, setInterval)"></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/javascript/" rel="tag"># javascript</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/02/22/2018-2-22/" rel="next" title="如何优雅的实现靠谱的前端倒计时（1）">
+                <i class="fa fa-chevron-left"></i> 如何优雅的实现靠谱的前端倒计时（1）
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="https://avatars3.githubusercontent.com/u/16618956?s=460&v=4"
+                alt="Rufer" />
+            
+              <p class="site-author-name" itemprop="name">Rufer</p>
+              <p class="site-description motion-element" itemprop="description">学好英文，多看文档。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">13</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/Miller547719886" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://segmentfault.com/u/miiier" target="_blank" title="SegmentFault">
+                      
+                        <i class="fa fa-fw fa-segmentfault"></i>SegmentFault</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友情链接
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://caojiantao.com/" title="caojiantao的博客" target="_blank">caojiantao的博客</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://fengshiweiit.github.io/" title="fengshiwei的博客" target="_blank">fengshiwei的博客</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#补0"><span class="nav-number">1.</span> <span class="nav-text">补0</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#阻塞时间超过定时器间隔"><span class="nav-number">2.</span> <span class="nav-text">阻塞时间超过定时器间隔</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#编写优雅的倒计时功能代码"><span class="nav-number">3.</span> <span class="nav-text">编写优雅的倒计时功能代码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#方案一"><span class="nav-number">3.1.</span> <span class="nav-text">方案一</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#方案二"><span class="nav-number">3.2.</span> <span class="nav-text">方案二</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">4.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Rufer</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Muse</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'http://rufer.site/2018/03/13/2018-3-13/';
+          this.page.identifier = '2018/03/13/2018-3-13/';
+          this.page.title = '如何优雅的实现靠谱的前端倒计时（2）';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
